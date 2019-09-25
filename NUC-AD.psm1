@@ -75,7 +75,7 @@ function Write-NewestErrorMessage
     }
 
     Write-Host -ForegroundColor $LogColour "`r`n$($LogType): $($LogString)"
-    Write-Output "`r`nFull Details:"
+    Write-Host "`r`nFull Details:"
     Write-Host -ForegroundColor $LogColour "$($LogType.ToString()): $($Error[0].Exception.Message)`r`n"
     
     $LogFileText = "$(Get-Date -Format "yyyy/MM/dd | HH:mm:ss") | $($LogType.ToString()) | $($LogString) : $($Error[0].Exception.Message)"
@@ -202,7 +202,8 @@ function Get-MirrorUser
     return $User
 }
 
-function Get-OU {
+function Get-OU 
+{
     param (
         # User to get the OU from
         [Parameter(
@@ -215,7 +216,7 @@ function Get-OU {
     return ($MirrorUser.DistinguishedName -replace '^cn=.+?(?<!\\),')
 }
 
-# Optimises the given name by removing leading/trailing whiteWrite-Space, illegal characters, and capitalising the first letter if required
+# Optimises the given name by removing leading/trailing white space, illegal characters, and capitalising the first letter if required
 function Optimize-Name
 {
     param (
@@ -351,4 +352,159 @@ function Confirm-NewUserDetails
 
     $ConfirmationMessage = "You are about to create an account with the following details:`r`n`r`nFirst Name: $($Firstname)`r`n`r`nLast Name: $($Lastname)`r`n`r`nJob Title: $($JobTitle)`r`n`r`nUsername: $($SamAccountName)`r`n`r`nEmail Address: $($EmailAddress)`r`n`r`nAccount Password: $($Password)`r`n`r`nAccount to Mirror: $($MirrorUser.DisplayName)`r`n`r`nDo you wish to proceed?"
     return (Get-Confirmation $ConfirmationMessage)
+}
+
+function Test-NewAccountExists
+{
+    param (
+        # Username of the required account
+        [Parameter(
+            Mandatory=$true,
+            Position=0
+        )]
+        [string]
+        $SamAccountName,
+
+        # Number of times to try, with each try taking a minimum of 3 seconds. Default is 20 tries
+        [Parameter()]
+        [int]
+        $AttemptCount = 20
+    )
+
+    Write-Host "Waiting for account to become available..."
+
+    for ($i = 0; $i -lt $AttemptCount; $i++)
+    {
+        try 
+        {
+            Get-ADUser $SamAccountName > $null
+            return $true
+        } 
+        catch 
+        { 
+            start-sleep -Seconds 3
+            continue
+        }
+    }
+
+    return $false
+}
+
+function New-UserAccount {
+    param (
+        # First name
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Firstname,
+
+        # Last name
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Lastname,
+
+        # Username
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $SamAccountName,
+
+        # Username, and domain
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $UPN,
+
+        # Job title/account description (Optional)
+        [Parameter()]
+        [string]
+        $JobTitle,
+
+        # Phone number (Optional)
+        [Parameter()]
+        [string]
+        $PhoneNumber,
+
+        # User to mirror permissions from
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $MirrorUser,
+
+        # The OU to place the user in
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $OU,
+
+        # Password to assign to the user
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Password
+    )
+    try 
+    {
+        New-ADUser -GivenName $Firstname -Surname $Lastname -Name "$($Firstname) $($Lastname)" -DisplayName "$($Firstname) $($Lastname)" -SamAccountName $SamAccountName -UserPrincipalName $UPN -Description $JobTitle -Title $JobTitle -OfficePhone $PhoneNumber -Department $MirrorUser.Department -Path $OU -Enabled $True -AccountPassword (ConvertTo-SecureString $Password -AsPlainText -force)
+    }
+    catch [UnauthorizedAccessException]
+    {
+        WriteNewestErrorMessage -LogType ERROR -LogString "Could not create the user - please run this script as admin."
+        return $false
+    }
+    catch [Microsoft.ActiveDirectory.Management.ADPasswordComplexityException]
+    {
+        $Script:PasswordInvalid = $True
+
+        Write-Warning "`r`nCould not assign password to new user. Please enter a new password."
+
+        if (!(Test-NewAccountExists))
+        {
+            return $false
+        }
+        
+        for (;;)
+        {
+            # Get a new password
+            $Password = Read-Host "`r`nPlease enter a password"
+            
+            try 
+            {                
+                $NewUser = Get-ADUser $SAM
+            }
+            catch 
+            {
+                Write-NewestErrorMessage -LogType ERROR -LogString "Could not find new account. Exiting"
+                return $false
+            }
+
+            try 
+            {
+                Set-ADAccountPassword -Identity $NewUser -Reset -NewPassword (ConvertTo-SecureString -AsPlainText $Password -Force)
+                Enable-ADAccount $NewUser
+
+                Write-Host "`r`n- Successfully set account password. Continuing."
+                break                
+            }
+            catch
+            {
+                WriteNewestErrorMessage -LogType WARNING -LogString "Failed to set account password. Please try again."
+                continue
+            }
+        }
+    }
+    catch
+    {    
+        WriteNewestErrorMessage -LogType ERROR -LogString "Failed to create new user. Exiting"
+        return $false
+    }
+    
 }

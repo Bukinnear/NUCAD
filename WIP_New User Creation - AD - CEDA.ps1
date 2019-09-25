@@ -18,7 +18,7 @@ Write-Warning "It is not recommended to create service accounts with this tool."
 Write-Output "`r`n----------`r`nStarting User Creation Process`r`n----------"
 
 # Get the first and last name, and loop until it is approved
-do 
+for (;;)
 {
     Write-Space
     $Script:Firstname = Get-FirstName
@@ -33,8 +33,11 @@ do
     $Lastname = Optimize-Name -Name $LastName -FixCapitalisation $ShouldFixCapitalisation
 
     # Confirm the name is correct
-    $ShouldContinue = Confirm-Name -FirstName $Firstname -LastName $Lastname
-} while (!$ShouldContinue)
+    If (Confirm-Name -FirstName $Firstname -LastName $Lastname)
+    {
+        break
+    }
+}
 
 Write-Space
 $Script:JobTitle = Get-JobTitle
@@ -115,3 +118,6 @@ if (!$ConfirmUserCreation)
     Write-Output "`r`n----------`r`nCancelled user creation`r`n----------`r`n"
     return
 }
+
+Write-Output "`r`n----------`r`Beginning user creation`r`n----------`r`n"
+
