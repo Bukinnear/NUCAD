@@ -111,7 +111,7 @@ If (!$currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Adminis
 #>
 function Write-Space
 {
-    Write-Output ""
+    Write-Host ""
 }
 
 function Get-FirstName
@@ -132,7 +132,7 @@ Function Get-JobTitle
     {
         $JobTitle = Read-Host "----------`r`nPlease enter a Job Description"
     } while (!(Get-Confirmation "Is this correct?`r`n`r`n$($JobTitle)"))
-    return $LastName
+    return $JobTitle
 }
 
 function Get-PhoneNumber
@@ -184,9 +184,7 @@ function Get-MirrorUser
         {
             $User = Get-ADUser -Identity $MirrorName -Properties *
 
-            start-sleep -seconds 2
-            
-            Write-Output "`r`nLocated mirror account:`r`n`r`nAccount"$User.SAMAccountName"`r`nName"$User.Name"`r`nEmail"$User.EmailAddress
+            Write-Host "`r`nLocated mirror account:`r`n`r`nAccount`r`n$($User.SAMAccountName)`r`n`r`nName`r`n$($User.Name)`r`n`r`nEmail`r`n$($User.EmailAddress)"
 
             if (Get-Confirmation "Is this the correct account?")
             {
@@ -195,15 +193,28 @@ function Get-MirrorUser
         }
         catch 
         {
-            Write-Output "`r`n"
-            Write-Warning "Could not find any user with that username."
+            Write-Host ""
+            Write-NewestErrorMessage -LogType WARNING -LogString "Could not find any user with that username."
             continue
         }
     }
-    
+
     return $User
 }
-Get-MirrorUser -UsernameFormat "Test"
+
+function Get-OU {
+    param (
+        # User to get the OU from
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $MirrorUser
+    )
+    
+    return ($MirrorUser.DistinguishedName -replace '^cn=.+?(?<!\\),')
+}
+
 # Optimises the given name by removing leading/trailing whiteWrite-Space, illegal characters, and capitalising the first letter if required
 function Optimize-Name
 {
@@ -315,6 +326,10 @@ function Confirm-NewUserDetails
         [Parameter(
             Mandatory=$true)]
         [string]
+        $SamAccountName,
+
+        [Parameter()]
+        [string]
         $JobTitle,
 
         [Parameter(
@@ -334,5 +349,6 @@ function Confirm-NewUserDetails
 
     )
 
-    $ConfirmationMessage = "You are about to create an account with the following details:`r`n`r`nFirst Name: $($Firstname)`r`nLast Name: $($Lastname)`r`n`r`nJob Title: $($JobTitle)`r`n`r`nEmail Address: $($EmailAddress)`r`n`r`nAccount Password: $($Password)`r`n`r`nAccount to Mirror: $($MirrorUser.DisplayName)`r`n`r`nDo you wish to proceed?"
+    $ConfirmationMessage = "You are about to create an account with the following details:`r`n`r`nFirst Name: $($Firstname)`r`n`r`nLast Name: $($Lastname)`r`n`r`nJob Title: $($JobTitle)`r`n`r`nUsername: $($SamAccountName)`r`n`r`nEmail Address: $($EmailAddress)`r`n`r`nAccount Password: $($Password)`r`n`r`nAccount to Mirror: $($MirrorUser.DisplayName)`r`n`r`nDo you wish to proceed?"
+    return (Get-Confirmation $ConfirmationMessage)
 }

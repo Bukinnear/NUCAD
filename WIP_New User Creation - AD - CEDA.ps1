@@ -32,7 +32,7 @@ do
     $Firstname = Optimize-Name -Name $Firstname -FixCapitalisation $ShouldFixCapitalisation
     $Lastname = Optimize-Name -Name $LastName -FixCapitalisation $ShouldFixCapitalisation
 
-    #Confirm the name is correct
+    # Confirm the name is correct
     $ShouldContinue = Confirm-Name -FirstName $Firstname -LastName $Lastname
 } while (!$ShouldContinue)
 
@@ -105,10 +105,12 @@ $Script:UsernameFormat = "Firstname Lastname = LastnameF"
 
 $Script:MirrorUser = Get-MirrorUser -UsernameFormat $UsernameFormat
 
-$Script:OU = $MirrorUser.DistinguishedName -replace '^cn=.+?(?<!\\),'
+$Script:OU = Get-OU $MirrorUser
 
-# Confirm
-if (!(Confirm-NewUserDetails))
+$ConfirmUserCreation = Confirm-NewUserDetails -Firstname $Firstname -Lastname $Lastname -JobTitle $JobTitle -SamAccountName $SAM -EmailAddress $EmailAddress -Password $Password -MirrorUser $MirrorUser
+
+# Confirm user creation
+if (!$ConfirmUserCreation)
 {
     Write-Output "`r`n----------`r`nCancelled user creation`r`n----------`r`n"
     return
