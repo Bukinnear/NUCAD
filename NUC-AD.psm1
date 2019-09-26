@@ -205,15 +205,15 @@ function Get-MirrorUser
 function Get-OU 
 {
     param (
-        # User to get the OU from
+        # User identity to get the OU from
         [Parameter(
             Mandatory=$true
         )]
-        [string]
+        [Microsoft.ActiveDirectory.Management.ADUser]
         $MirrorUser
     )
-    
-    return ($MirrorUser.DistinguishedName -replace '^cn=.+?(?<!\\),')
+
+    return $MirrorUser.DistinguishedName -replace '^cn=.+?(?<!\\),'
 }
 
 # Optimises the given name by removing leading/trailing white space, illegal characters, and capitalising the first letter if required
@@ -371,6 +371,7 @@ function Test-NewAccountExists
         $AttemptCount = 20
     )
 
+    Write-Space
     Write-Host "Waiting for account to become available..."
 
     for ($i = 0; $i -lt $AttemptCount; $i++)
@@ -390,7 +391,9 @@ function Test-NewAccountExists
     return $false
 }
 
-function New-UserAccount {
+# Creates a new user from the parameters provided. Returns true if the account was created successfully, and false if not.
+function New-UserAccount 
+{
     param (
         # First name
         [Parameter(
@@ -453,18 +456,18 @@ function New-UserAccount {
     )
     try 
     {
-        New-ADUser -GivenName $Firstname -Surname $Lastname -Name "$($Firstname) $($Lastname)" -DisplayName "$($Firstname) $($Lastname)" -SamAccountName $SamAccountName -UserPrincipalName $UPN -Description $JobTitle -Title $JobTitle -OfficePhone $PhoneNumber -Department $MirrorUser.Department -Path $OU -Enabled $True -AccountPassword (ConvertTo-SecureString $Password -AsPlainText -force)
+        New-ADUser -GivenName $Firstname -Surname $Lastname -Name "$($Firstname) $($Lastname)" -DisplayName "$($Firstname) $($Lastname)" -SamAccountName $SamAccountName -UserPrincipalName $UPN -Description $JobTitle -Title $JobTitle -OfficePhone $PhoneNumber -Department $MirrorUser.Department -Path $OU -Enabled $True -AccountPassword (ConvertTo-SecureString $Password -AsPlainText -force) -ErrorAction Stop
     }
     catch [UnauthorizedAccessException]
     {
-        WriteNewestErrorMessage -LogType ERROR -LogString "Could not create the user - please run this script as admin."
+        Write-NewestErrorMessage -LogType ERROR -LogString "Could not create the user - please run this script as admin."
         return $false
     }
     catch [Microsoft.ActiveDirectory.Management.ADPasswordComplexityException]
     {
         $Script:PasswordInvalid = $True
 
-        Write-Warning "`r`nCould not assign password to new user. Please enter a new password."
+        Write-Warning "`r`nCould not assign password to new user."
 
         if (!(Test-NewAccountExists))
         {
@@ -477,7 +480,7 @@ function New-UserAccount {
             $Password = Read-Host "`r`nPlease enter a password"
             
             try 
-            {                
+            {
                 $NewUser = Get-ADUser $SAM
             }
             catch 
@@ -492,19 +495,161 @@ function New-UserAccount {
                 Enable-ADAccount $NewUser
 
                 Write-Host "`r`n- Successfully set account password. Continuing."
-                break                
+                break          
             }
             catch
             {
-                WriteNewestErrorMessage -LogType WARNING -LogString "Failed to set account password. Please try again."
+                Write-NewestErrorMessage -LogType WARNING -LogString "Failed to set account password. Please try again."
                 continue
             }
         }
     }
     catch
     {    
-        WriteNewestErrorMessage -LogType ERROR -LogString "Failed to create new user. Exiting"
+        Write-NewestErrorMessage -LogType ERROR -LogString "Failed to create new user. Exiting"
+        return $false
+    }    
+
+    Write-Space
+    If (Test-NewAccountExists $SAM)
+    {
+        return $true
+    }
+    else
+    {
+        Write-Warning "`r`nCould not locate the new account. Please manually check the account before continuing."
         return $false
     }
+}
+
+function Set-MirroredProperties
+{
+    param (
+        # User to set properties on
+        [Parameter(
+            Mandatory=$true
+        )]
+        [Microsoft.ActiveDirectory.Management.ADUser]
+        $Identity,
+
+        # User to mirror properties from
+        [Parameter(
+            Mandatory=$true
+        )]
+        [Microsoft.ActiveDirectory.Management.ADUser]
+        $MirrorUser
+    )
+
+    try
+    {
+        Set-ADUser -Identity $NewUser.identity -Manager $MirrorUser.manager -State $MirrorUser.st -Country $MirrorUser.c -PostalCode $MirrorUser.postalCode -StreetAddress $MirrorUser.streetAddress -City $MirrorUser.l -Office $MirrorUser.physicalDeliveryOfficeName -HomePage $MirrorUser.HomePage
+        Write-Output "- Address and manager have been set."
+    }
+    catch
+    {
+        WriteNewestErrorMessage -LogType WARNING -LogString "Could not set some parameters - please double check the account's address and manager"    
+    }
+}
+
+function Set-MirroredGroups 
+{
+    param (
+        # User to add to the groups
+        [Parameter(
+            Mandatory=$true
+        )]
+        [Microsoft.ActiveDirectory.Management.ADUser]
+        $Identity,
+
+        # User to mirror groups from
+        [Parameter(
+            Mandatory=$true
+        )]
+        [Microsoft.ActiveDirectory.Management.ADUser]
+        $MirrorUser
+    )
+    #Add account to mirrored user's group memberships
+    try
+    {
+        $NewUser | Add-AdPrincipalGroupMembership -MemberOf (Get-ADPrincipalGroupMembership $MirrorUser | Where {$_.name -ne 'Domain Users'})
+        Write-Output "- User has been added to all mirrored user's groups"
+    }
+    catch
+    {
+        WriteNewestErrorMessage -LogType ERROR -LogString "Could not add user to all groups - please doublecheck group memebrships"
+    }
     
+}
+
+function Set-Addresses 
+{
+    param (
+        # The new user to add the addresses to
+        [Parameter(
+            Mandatory=$true
+        )]
+        [Microsoft.ActiveDirectory.Management.ADUser]
+        $Identity,
+
+        # Array of Proxy Addresses       
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string[]]
+        $ProxyAddresses,
+        
+        # Email address - usually the primary SMTP address
+        [Parameter()]
+        [string]
+        $EmailAddress,
+
+        # Mailnickname - the SAM Account name
+        [Parameter()]
+        [string]
+        $SAM
+    )
+
+    try 
+    {
+        Set-ADUser -Identity $NewUser -Add @{ProxyAddresses = $ProxyAddresses}
+        Write-Host "- Set Proxy Addresses"
+    }
+    catch 
+    {
+        Write-Warning "Could not set Proxy Addresses"
+        
+    }
+    
+
+    if ($Mail -ne "")
+    {
+        try 
+        {
+            Set-ADUser -Identity $NewUser -add @{MailNickName = $SAM}
+            Write-Host "- Set Mail Nickname field"
+        }
+        catch 
+        {
+            Write-Warning "Could not set Mail field"
+        }
+        
+    }
+
+    if ($MailNickname -ne "")
+    {
+        try 
+        {
+            Set-ADUser -Identity $NewUser -add @{MailNickName = $EmailAddress}
+            Write-Host "- Set Mail field"            
+        }
+        catch 
+        {
+            Write-Warning "Could not set Mail Nickname field"
+        }
+    }
+}
+    
+function Start-O365Sync 
+{
+    Start-ADSyncSyncCycle -PolicyType Delta    
 }

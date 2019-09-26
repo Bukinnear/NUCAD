@@ -121,3 +121,31 @@ if (!$ConfirmUserCreation)
 
 Write-Output "`r`n----------`r`Beginning user creation`r`n----------`r`n"
 
+$CreationSuccess = New-UserAccount -Firstname $Firstname -Lastname $Lastname -SamAccountName $SAM -UPN $UPN -JobTitle $JobTitle -PhoneNumber $PhoneNumber -MirrorUser $MirrorUser -OU $OU -Password $Password
+
+if ($CreationSuccess)
+{
+    Write-Space    
+    Write-Host "----------`r`nUser Created Successfully."
+}
+else
+{
+    Write-Space
+    Write-Warning "`r`nThere was an error creating the account. Exiting"
+    return
+}
+
+$Script:NewUser = Get-ADUser $SAM
+
+Write-Output "`r`n----------`r`nPopulating account details.`r`n----------`r`n"
+
+Set-MirroredProperties -Identity $NewUser -MirrorUser $MirrorUser
+
+Set-MirroredGroups -Identity $NewUser -MirrorUser $MirrorUser
+
+Set-Addresses -Identity $NewUser -ProxyAddresses $ProxyAddresses -EmailAddress $EmailAddress -SAM $SAM
+
+if (Get-Confirmation "Would you like to run a sync to O365?")
+{
+    Start-O365Sync
+}
