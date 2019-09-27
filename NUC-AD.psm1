@@ -90,7 +90,7 @@ function Write-NewestErrorMessage
 # Import AD Module
 try
 {
-    Import-Module ActiveDirectory -ErrorAction Stop
+    # Import-Module ActiveDirectory -ErrorAction Stop
 }
 catch
 {
@@ -124,6 +124,45 @@ function Get-Lastname
 {
     [string]$LastName = Read-Host "----------`r`nPlease enter a Last Name"
     return $LastName
+}
+
+# Get the first and last name, and loop until it is approved. Returns an array containing the First and Last name
+function Get-FullName
+{
+    param (
+        # Choose whether to prompt for, and fix capitalisation
+        [Parameter()]
+        [ParameterType]
+        $PromptForCapitalisation=$true
+    )
+
+    for (;;)
+    {
+        Write-Space
+        $Firstname = Get-FirstName
+
+        Write-Space
+        $Lastname = Get-Lastname
+
+        if ($PromptForCapitalisation)
+        {
+            # Clean the given names
+            $ShouldFixCapitalisation = Get-Confirmation "----------`r`nWould you like to fix/standardise the capitalisation of this name?`r`n(Choose yes if you are not sure)"    
+        }
+        else 
+        {
+            $ShouldFixCapitalisation = $false
+        }
+
+        $Firstname = Optimize-Name -Name $Firstname -FixCapitalisation $ShouldFixCapitalisation
+        $Lastname = Optimize-Name -Name $LastName -FixCapitalisation $ShouldFixCapitalisation
+
+        # Confirm the name is correct
+        If (Confirm-Name -FirstName $Firstname -LastName $Lastname)
+        {
+            return @($Firstname, $Lastname)
+        }
+    }
 }
 
 Function Get-JobTitle
@@ -162,6 +201,50 @@ function Get-Password
         } while ($Password -eq "" -or $null -eq $Password)
     }
     return $Password
+}
+
+function Get-Addresses
+{
+    param (
+        # The name to be used in front of the domain/s
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $MailName,
+
+        # Domain to be used in the primary SMTP Address/Email field
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $PrimaryDomain,
+
+        # Array of domains to be added as aliases/proxy addresses. This MUST be an array, not just a string eg. @("Example.com.au", "Example.com")
+        [Parameter()]
+        [string[]]
+        $SecondaryDomains = @()
+    )
+    
+    for (;;)
+    {        
+        $PrimaryAddress = "$($Mail)@$($PrimaryDomain)"
+        $ProxyAddresses = @($PrimaryAddress)
+        
+        foreach ($Domain in $SecondaryDomains)
+        {
+            $ProxyAddresses += "$($Mail)@$($Domain)"            
+        }
+
+        if (Confirm-PrimarySMTPAddress -PrimarySMTP $EmailAddress) 
+        {
+            return $ProxyAddresses
+        }
+        else 
+        {
+            $Script:Mail = Read-Host "Enter the email address (Only enter the text BEFORE the '@' sign)"    
+        }
+    }
 }
 
 # Gets the username 

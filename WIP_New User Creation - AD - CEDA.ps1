@@ -17,27 +17,9 @@ Write-Warning "It is not recommended to create service accounts with this tool."
 
 Write-Output "`r`n----------`r`nStarting User Creation Process`r`n----------"
 
-# Get the first and last name, and loop until it is approved
-for (;;)
-{
-    Write-Space
-    $Script:Firstname = Get-FirstName
-
-    Write-Space
-    $Script:Lastname = Get-Lastname
-
-    # Clean the given names
-    $ShouldFixCapitalisation = Get-Confirmation "----------`r`nWould you like to fix/standardise the capitalisation of this name?`r`n(Choose yes if you are not sure)"
-
-    $Firstname = Optimize-Name -Name $Firstname -FixCapitalisation $ShouldFixCapitalisation
-    $Lastname = Optimize-Name -Name $LastName -FixCapitalisation $ShouldFixCapitalisation
-
-    # Confirm the name is correct
-    If (Confirm-Name -FirstName $Firstname -LastName $Lastname)
-    {
-        break
-    }
-}
+$Fullname = Get-Fullname
+$Script:FirstName = $Fullname[0]
+$Script:LastName = $Fullname[1]
 
 Write-Space
 $Script:JobTitle = Get-JobTitle
@@ -56,7 +38,7 @@ LDAP Fields:
 
 UPN:
 User logon name/User Principle Name 
-WARNING: This may be different from $Mail
+WARNING: This may be different from the email address
 LDAP Fields:
 - UserPrincipleName (User Logon Name)
 #>
@@ -73,39 +55,13 @@ If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
     return
 }
 
-<#
-Mail:
-Email 
-(Only used below in primary/alias SMTP addresses, this can change later in the script)
-LDAP Fields:   
-- N/A 
-
-EmailAddress:
-Used as the primary SMTP address (this is set with the proxy addresses below)
-LDAP Fields:
-- Mail (EmailAddress)
-- PrimarySmtpAddress (not explicitly set, but by extension of proxy addresses
-#>
 $Script:Mail = $FirstName+"."+$LastName
+$Script:PrimaryDomain = "Ceda.com.au"
+$Script:SecondaryDomains = @("smtp:$($Mail)@CEDA.mail.onmicrosoft.com")
 
-# Get Proxy Addresses
-for (;;)
-{
-    $Script:EmailAddress = "$($Mail)@CEDA.com.au"
-    $Script:ProxyAddresses = "SMTP:$($EmailAddress)", "smtp:$($Mail)@CEDA.mail.onmicrosoft.com"
-
-    if (Confirm-PrimarySMTPAddress -PrimarySMTP $EmailAddress) 
-    {
-        break
-    }
-    else 
-    {
-        $Script:Mail = Read-Host "Enter the email address (Only enter the text BEFORE the '@' sign)"    
-    }
-}
+$Script:ProxyAddresses = @(Get-Addresses -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains)
 
 $Script:UsernameFormat = "Firstname Lastname = LastnameF"
-
 $Script:MirrorUser = Get-MirrorUser -UsernameFormat $UsernameFormat
 
 $Script:OU = Get-OU $MirrorUser
