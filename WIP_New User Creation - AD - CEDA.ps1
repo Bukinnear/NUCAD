@@ -15,74 +15,73 @@ Import-Module -Name "$($ScriptPath)\NUC-AD" -Force
 
 Write-Warning "It is not recommended to create service accounts with this tool."
 
-Write-Output "`r`n----------`r`nStarting User Creation Process`r`n----------"
+<#
+----------
+Get new user details
+----------
+#>
+
+Write-Heading "Starting User Creation Process"
 
 $Fullname = Get-Fullname
 $Script:FirstName = $Fullname[0]
 $Script:LastName = $Fullname[1]
-
 Write-Space
 $Script:JobTitle = Get-JobTitle
-
 Write-Space
 $Script:PhoneNumber = Get-PhoneNumber
-
 Write-Space
 $Script:Password = Get-Password
 
-<#
-SAM:
-Pre-windows 2000 Logon name
-LDAP Fields:
-- SamAccountName 
-
-UPN:
-User logon name/User Principle Name 
-WARNING: This may be different from the email address
-LDAP Fields:
-- UserPrincipleName (User Logon Name)
-#>
-
+# Pre-windows 2000 Logon name. This is normally what the user will log in with. 
+#LDAP Field: SamAccountName
 $Script:SAM = $LastName+$FirstName[0]
 
+# User logon name/User Principle Name. This will control which domain the user is created under.
+# LDAP Field: UserPrincipleName (User Logon Name).
 $Script:UPN = "$($FirstName+"."+$LastName)@CEDA.com.au"
 
 # Ensure that this account does not already exist
 If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
 {
     Write-Warning "`r`nUser with SAM account of $($SAM) already exists!"
-    Write-Output "`r`n----------`r`nCancelled user creation`r`n----------`r`n"
+    Write-Heading "Cancelled user creation"
     return
 }
 
+# NOTE: Test this section, I am not sure how it will react when assigning the primary address if it already exists.
 $Script:Mail = $FirstName+"."+$LastName
 $Script:PrimaryDomain = "Ceda.com.au"
-$Script:SecondaryDomains = @("smtp:$($Mail)@CEDA.mail.onmicrosoft.com")
-
+$Script:SecondaryDomains = @("CEDA.mail.onmicrosoft.com")
 $Script:ProxyAddresses = @(Get-Addresses -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains)
+$Script:EmailAddress = $ProxyAddresses[0]
 
-$Script:UsernameFormat = "Firstname Lastname = LastnameF"
-$Script:MirrorUser = Get-MirrorUser -UsernameFormat $UsernameFormat
-
+$Script:MirrorUser = Get-MirrorUser -UsernameFormat "Firstname Lastname = LastnameF"
 $Script:OU = Get-OU $MirrorUser
 
 $ConfirmUserCreation = Confirm-NewUserDetails -Firstname $Firstname -Lastname $Lastname -JobTitle $JobTitle -SamAccountName $SAM -EmailAddress $EmailAddress -Password $Password -MirrorUser $MirrorUser
 
 # Confirm user creation
-if (!$ConfirmUserCreation)
+if (!$ConfirmAccountCreation)
 {
-    Write-Output "`r`n----------`r`nCancelled user creation`r`n----------`r`n"
+    Write-Heading "Cancelled user creation"
     return
 }
 
-Write-Output "`r`n----------`r`Beginning user creation`r`n----------`r`n"
+<#
+----------
+Create the account
+----------
+#>
 
-$CreationSuccess = New-UserAccount -Firstname $Firstname -Lastname $Lastname -SamAccountName $SAM -UPN $UPN -JobTitle $JobTitle -PhoneNumber $PhoneNumber -MirrorUser $MirrorUser -OU $OU -Password $Password
+Write-Heading "Beginning user creation"
 
-if ($CreationSuccess)
-{
-    Write-Space    
-    Write-Host "----------`r`nUser Created Successfully."
+$Script:NewUser = New-UserAccount -Firstname $Firstname -Lastname $Lastname -SamAccountName $SAM -UPN $UPN -JobTitle $JobTitle -PhoneNumber $PhoneNumber -MirrorUser $MirrorUser -OU $OU -Password $Password
+
+if ($NewUser)
+{    
+    Write-Space
+    Write-Output "- User Created Successfully."
 }
 else
 {
@@ -91,15 +90,19 @@ else
     return
 }
 
-$Script:NewUser = Get-ADUser $SAM
-
-Write-Output "`r`n----------`r`nPopulating account details.`r`n----------`r`n"
+Write-Heading "Populating account details."
 
 Set-MirroredProperties -Identity $NewUser -MirrorUser $MirrorUser
-
 Set-MirroredGroups -Identity $NewUser -MirrorUser $MirrorUser
+Set-ProxyAddresses -Identity $NewUser -ProxyAddresses $ProxyAddresses
+Set-LDAPMail -Identity $NewUser -PrimarySmtpAddress $EmailAddress
+Set-LDAPMailNickName -Identity $NewUser -SamAccountName $SAM
 
-Set-Addresses -Identity $NewUser -ProxyAddresses $ProxyAddresses -EmailAddress $EmailAddress -SAM $SAM
+<#
+----------
+Finishing tasks
+----------
+#>
 
 if (Get-Confirmation "Would you like to run a sync to O365?")
 {

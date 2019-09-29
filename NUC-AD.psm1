@@ -1,4 +1,4 @@
-$ErrorsPresent = $false
+$ErrorsPresent = $null
 $LogPath = 'C:\temp\UserCreationADLog.txt'
 
 Add-Type -TypeDefinition @"
@@ -38,7 +38,7 @@ function Get-Confirmation
         switch ($msgConfimation)
         {
             {'yes','y' -icontains $_}{return $true}
-            {'no','n' -icontains $_}{return $false}
+            {'no','n' -icontains $_}{return $null}
             default
             {
                 Write-Warning "I could not understand your response. Please reply with either yes or no."
@@ -109,17 +109,36 @@ If (!$currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Adminis
     }    
 }
 #>
+
+# Writes an empty line to the console
 function Write-Space
 {
     Write-Host ""
 }
 
+function Write-Heading
+{
+    param (
+        # The heading text
+        [Parameter(
+            Mandatory=$true,
+            Position=0
+        )]
+        [String]
+        $Heading
+    )
+
+    Write-Host "`r`n----------`r`n$($Heading)`r`n----------`r`n"
+}
+
+# Prompt the user to provide a first name for the new account
 function Get-FirstName
 {
     [string]$FirstName = Read-Host "----------`r`nPlease enter a First Name"
     return $FirstName
 }
 
+# Prompt the user to provide a last name for the new account
 function Get-Lastname
 {
     [string]$LastName = Read-Host "----------`r`nPlease enter a Last Name"
@@ -146,14 +165,14 @@ function Get-FullName
 
         if ($PromptForCapitalisation)
         {
-            # Clean the given names
             $ShouldFixCapitalisation = Get-Confirmation "----------`r`nWould you like to fix/standardise the capitalisation of this name?`r`n(Choose yes if you are not sure)"    
         }
         else 
         {
-            $ShouldFixCapitalisation = $false
+            $ShouldFixCapitalisation = $null
         }
 
+        # Clean the given names
         $Firstname = Optimize-Name -Name $Firstname -FixCapitalisation $ShouldFixCapitalisation
         $Lastname = Optimize-Name -Name $LastName -FixCapitalisation $ShouldFixCapitalisation
 
@@ -165,6 +184,7 @@ function Get-FullName
     }
 }
 
+# Prompt the user to provide a job title/description for the new account
 Function Get-JobTitle
 {
     do 
@@ -174,6 +194,7 @@ Function Get-JobTitle
     return $JobTitle
 }
 
+# Prompt the user to provide a phone number for the new account
 function Get-PhoneNumber
 {
     do 
@@ -183,6 +204,7 @@ function Get-PhoneNumber
     return $PhoneNumber
 }
 
+# Prompt the user to provide a password for the new account
 function Get-Password
 {
     param (
@@ -203,6 +225,7 @@ function Get-Password
     return $Password
 }
 
+# Generates and returns the proxy addresses of the user from the mail name, and domains provided. 
 function Get-Addresses
 {
     param (
@@ -228,12 +251,12 @@ function Get-Addresses
     
     for (;;)
     {        
-        $PrimaryAddress = "$($Mail)@$($PrimaryDomain)"
+        $PrimaryAddress = "SMTP:$($Mail)@$($PrimaryDomain)"
         $ProxyAddresses = @($PrimaryAddress)
         
         foreach ($Domain in $SecondaryDomains)
         {
-            $ProxyAddresses += "$($Mail)@$($Domain)"            
+            $ProxyAddresses += "smtp:$($Mail)@$($Domain)"            
         }
 
         if (Confirm-PrimarySMTPAddress -PrimarySMTP $EmailAddress) 
@@ -251,16 +274,20 @@ function Get-Addresses
 function Get-MirrorUser 
 {
     param (
-        # The format of the username as a text prompt
-        [Parameter(
-            Mandatory=$true)]
+        # The format of the username to be used as a text prompt
+        [Parameter()]
         [string]
         $UsernameFormat
     )
 
     for (;;)
-    {        
-        $MirrorName = Read-Host "`r`n----------`r`nPlease enter a user to mirror `r`n(Username format: $($UsernameFormat))"
+    {
+        if ($null -ne $UsernameFormat)
+        {
+            $Prompt = "`r`n(Username format: $($UsernameFormat))"
+        }
+        
+        $MirrorName = Read-Host "`r`n----------`r`nPlease enter a user to mirror$($Prompt)"
         $MirrorName = $MirrorName.Trim()
         
         try 
@@ -276,7 +303,7 @@ function Get-MirrorUser
         }
         catch 
         {
-            Write-Host ""
+            Write-Space
             Write-NewestErrorMessage -LogType WARNING -LogString "Could not find any user with that username."
             continue
         }
@@ -285,6 +312,7 @@ function Get-MirrorUser
     return $User
 }
 
+# Gets the OU of the provided user
 function Get-OU 
 {
     param (
@@ -297,6 +325,51 @@ function Get-OU
     )
 
     return $MirrorUser.DistinguishedName -replace '^cn=.+?(?<!\\),'
+}
+
+# Checks that the provided account name exists. This will wait and check again for a set number of times if it cannot be immediately found. Returns the user if found.
+function Get-NewAccount
+{
+    param (
+        # Username of the required account
+        [Parameter(
+            Mandatory=$true,
+            Position=0
+        )]
+        [string]
+        $SamAccountName,
+
+        # Number of times to try, with each try taking a minimum of 3 seconds. Default is 20 tries
+        [Parameter()]
+        [int]
+        $AttemptCount = 20
+    )
+
+    Write-Space
+    Write-Host "Waiting for account to become available..."
+
+    for ($i = 0; $i -lt $AttemptCount; $i++)
+    {
+        try 
+        {
+            $User = Get-ADUser $SamAccountName
+            break
+        } 
+        catch 
+        { 
+            start-sleep -Seconds 3
+            continue
+        }
+    }
+
+    if ($User)
+    {        
+        return $User
+    }
+    else
+    {
+        return $null
+    }
 }
 
 # Optimises the given name by removing leading/trailing white space, illegal characters, and capitalising the first letter if required
@@ -313,7 +386,7 @@ function Optimize-Name
         # Whether to capitalise the name
         [Parameter()]
         [bool]
-        $FixCapitalisation = $false
+        $FixCapitalisation = $null
     )
     
     # illegal characters
@@ -371,7 +444,7 @@ function Confirm-AccountDoesNotExist
     try 
     {
         get-ADUser -identity $SAM > $null
-        return $false
+        return $null
     } catch 
     {
         return $true
@@ -393,10 +466,10 @@ function Confirm-PrimarySMTPAddress
     return Get-Confirmation "----------`r`nThe primary SMTP/email address as been set to:`r`n`r`n$($PrimarySMTP)`r`n`r`nIs this correct?"
 }
 
-# Confirms all new user details
-function Confirm-NewUserDetails 
+# Prompts the user to confirm the new account details
+function Confirm-NewAccountDetails 
 {
-    param (        
+    param (
         [Parameter(
             Mandatory=$true)]
         [string]
@@ -435,43 +508,6 @@ function Confirm-NewUserDetails
 
     $ConfirmationMessage = "You are about to create an account with the following details:`r`n`r`nFirst Name: $($Firstname)`r`n`r`nLast Name: $($Lastname)`r`n`r`nJob Title: $($JobTitle)`r`n`r`nUsername: $($SamAccountName)`r`n`r`nEmail Address: $($EmailAddress)`r`n`r`nAccount Password: $($Password)`r`n`r`nAccount to Mirror: $($MirrorUser.DisplayName)`r`n`r`nDo you wish to proceed?"
     return (Get-Confirmation $ConfirmationMessage)
-}
-
-function Test-NewAccountExists
-{
-    param (
-        # Username of the required account
-        [Parameter(
-            Mandatory=$true,
-            Position=0
-        )]
-        [string]
-        $SamAccountName,
-
-        # Number of times to try, with each try taking a minimum of 3 seconds. Default is 20 tries
-        [Parameter()]
-        [int]
-        $AttemptCount = 20
-    )
-
-    Write-Space
-    Write-Host "Waiting for account to become available..."
-
-    for ($i = 0; $i -lt $AttemptCount; $i++)
-    {
-        try 
-        {
-            Get-ADUser $SamAccountName > $null
-            return $true
-        } 
-        catch 
-        { 
-            start-sleep -Seconds 3
-            continue
-        }
-    }
-
-    return $false
 }
 
 # Creates a new user from the parameters provided. Returns true if the account was created successfully, and false if not.
@@ -544,33 +580,23 @@ function New-UserAccount
     catch [UnauthorizedAccessException]
     {
         Write-NewestErrorMessage -LogType ERROR -LogString "Could not create the user - please run this script as admin."
-        return $false
+        return $null
     }
     catch [Microsoft.ActiveDirectory.Management.ADPasswordComplexityException]
     {
-        $Script:PasswordInvalid = $True
-
         Write-Warning "`r`nCould not assign password to new user."
 
-        if (!(Test-NewAccountExists))
+        $NewUser = Get-NewAccount -SamAccountName $SAM
+        if (!$NewUser)
         {
-            return $false
+            Write-NewestErrorMessage -LogType ERROR -LogString "Could not find new account."
+            return $null
         }
         
         for (;;)
         {
-            # Get a new password
+            # Prompt the user for a new password
             $Password = Read-Host "`r`nPlease enter a password"
-            
-            try 
-            {
-                $NewUser = Get-ADUser $SAM
-            }
-            catch 
-            {
-                Write-NewestErrorMessage -LogType ERROR -LogString "Could not find new account. Exiting"
-                return $false
-            }
 
             try 
             {
@@ -578,7 +604,7 @@ function New-UserAccount
                 Enable-ADAccount $NewUser
 
                 Write-Host "`r`n- Successfully set account password. Continuing."
-                break          
+                return $NewUser
             }
             catch
             {
@@ -590,21 +616,23 @@ function New-UserAccount
     catch
     {    
         Write-NewestErrorMessage -LogType ERROR -LogString "Failed to create new user. Exiting"
-        return $false
-    }    
+        return $null
+    }
 
-    Write-Space
-    If (Test-NewAccountExists $SAM)
+    # NOTE: Check that this works as expected
+    if ($NewUser = Get-NewAccount $SAM)
     {
-        return $true
+        return $NewUser
     }
     else
     {
+        Write-Space
         Write-Warning "`r`nCould not locate the new account. Please manually check the account before continuing."
-        return $false
+        return $null
     }
 }
 
+# Copies properties from the mirrored user to the provided account
 function Set-MirroredProperties
 {
     param (
@@ -634,6 +662,7 @@ function Set-MirroredProperties
     }
 }
 
+# Copies groups from the mirrored user to the provided account
 function Set-MirroredGroups 
 {
     param (
@@ -664,7 +693,7 @@ function Set-MirroredGroups
     
 }
 
-function Set-Addresses 
+function Set-ProxyAddresses
 {
     param (
         # The new user to add the addresses to
@@ -680,16 +709,6 @@ function Set-Addresses
         )]
         [string[]]
         $ProxyAddresses,
-        
-        # Email address - usually the primary SMTP address
-        [Parameter()]
-        [string]
-        $EmailAddress,
-
-        # Mailnickname - the SAM Account name
-        [Parameter()]
-        [string]
-        $SAM
     )
 
     try 
@@ -702,33 +721,64 @@ function Set-Addresses
         Write-Warning "Could not set Proxy Addresses"
         
     }
-    
+}
 
-    if ($Mail -ne "")
+function Set-LDAPMail
+{
+    param (
+        # The new user to add the field to
+        [Parameter(
+            Mandatory=$true
+        )]
+        [Microsoft.ActiveDirectory.Management.ADUser]
+        $Identity,
+
+        # Primary SMTP Address
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $PrimarySmtpAddress
+    )
+
+    try 
     {
-        try 
-        {
-            Set-ADUser -Identity $NewUser -add @{MailNickName = $SAM}
-            Write-Host "- Set Mail Nickname field"
-        }
-        catch 
-        {
-            Write-Warning "Could not set Mail field"
-        }
-        
+        Set-ADUser -Identity $NewUser -add @{Mail = $PrimarySmtpAddress}
+        Write-Host "- Set Mail field"            
     }
-
-    if ($MailNickname -ne "")
+    catch 
     {
-        try 
-        {
-            Set-ADUser -Identity $NewUser -add @{MailNickName = $EmailAddress}
-            Write-Host "- Set Mail field"            
-        }
-        catch 
-        {
-            Write-Warning "Could not set Mail Nickname field"
-        }
+        Write-Warning "Could not set Mail field"
+    }
+    
+}
+
+function Set-LDAPMailNickName
+{
+    param (
+        # The new user to add the field to
+        [Parameter(
+            Mandatory=$true
+        )]
+        [Microsoft.ActiveDirectory.Management.ADUser]
+        $Identity,
+
+        # Sam Account name
+        [Parameter(
+            Mandatory=$true
+        )]
+        [String]
+        $SamAccountName
+    )
+
+    try 
+    {
+        Set-ADUser -Identity $NewUser -add @{MailNickName = $SAM}
+        Write-Host "- Set Mail Nickname field"
+    }
+    catch 
+    {
+        Write-Warning "Could not set Mail Nickname field"
     }
 }
     
