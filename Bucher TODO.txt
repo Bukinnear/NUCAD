@@ -1,0 +1,41 @@
+1. Create home directory
+2. Set home directory permissions
+3. Set home directory in user profile
+
+Write-Output "`r`n`----------`r`nCreating user's home drive`r`n`----------`r`n"
+
+$AbortHomeDrive = $false
+$UserFoldersDirectory = "\\mjemelfs2\user$"
+$HomeDrivePath = $UserFoldersDirectory + "\" + $SAM
+$Domain = "vicmje"
+
+# Create home directory
+New-Item -Path $UserFoldersDirectory -Name $SAM -ItemType Directory -ErrorAction Stop > $null
+
+# Get the current permissions of the home drive folder
+$ACL = Get-Acl $HomeDrivePath
+
+# The new NTFS permissions rule parameters 
+$RuleParameters = @(
+    "$($Domain)\$($SAM)",
+    "FullControl",
+    @(
+        "ContainerInherit"
+        "ObjectInherit"
+    ),
+    "None",
+    "Allow"
+    )
+
+# Add the rule to the current permissions list
+$Rule = New-Object 
+    -TypeName System.Security.AccessControl.FileSystemAccessRule
+    -ArgumentList $RuleParameters
+
+$ACL.SetAccessRule($Rule) 
+
+# Set the NTFS permissions on the user's home folder to our new list
+Set-Acl -Path $HomeDrivePath -AclObject $ACL
+
+# Set home drive on the user's profile
+$NewUser | Set-ADUser -HomeDrive "H:" -HomeDirectory $HomeDrivePath

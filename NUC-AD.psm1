@@ -1,4 +1,3 @@
-$ErrorsPresent = $null
 $LogPath = 'C:\temp\UserCreationADLog.txt'
 
 Add-Type -TypeDefinition @"
@@ -187,6 +186,7 @@ function Get-FullName
 # Prompt the user to provide a job title/description for the new account
 Function Get-JobTitle
 {
+    Write-Space
     do 
     {
         $JobTitle = Read-Host "----------`r`nPlease enter a Job Description"
@@ -197,6 +197,7 @@ Function Get-JobTitle
 # Prompt the user to provide a phone number for the new account
 function Get-PhoneNumber
 {
+    Write-Space
     do 
     {
         $PhoneNumber = Read-Host "----------`r`nPlease enter a phone number (Leave blank for none)"        
@@ -209,7 +210,7 @@ function Get-Password
 {
     param (
         # The password to set it to
-        [Parameter(Position=0)]
+        [Parameter()]
         [string]
         $Password = '$Password99!'
     )
@@ -217,6 +218,7 @@ function Get-Password
     # Allow for a custom password
     if (!(Get-Confirmation "----------`r`nWould you like to set the default password?`r`n(Choose 'No' to create your own)`r`n`r`n$($Password)"))
     {
+        Write-Space
         do
         {
             $Password = Read-Host "Please enter a Password"
@@ -632,6 +634,137 @@ function New-UserAccount
     }
 }
 
+function New-Directory
+{
+    param (
+        # The folder to create the new directory under
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $ParentFolderPath,
+
+        # The Name of the folder to create
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $FolderName
+    )
+    
+    try
+    {
+        $NewDirectory = New-Item -Path $ParentFolderPath -Name $FolderName -ItemType Directory -ErrorAction Stop
+        return $NewDirectory
+    }
+    catch
+    {
+        If ($_.CategoryInfo.Category -eq "ResourceExists")
+        {
+            write-warning "User's home folder already exists"
+            if (!(PromptForConfirmation "`r`nAn existing folder has been found at $($ParentFolderPath)\$(FolderName)`r`n`r`nAre you sure you want to continue with this folder?`r`n(If you choose 'No', you will need to set up the user's home drive manually)"))
+            {
+                return Get-Item -Path "$($ParentFolderPath)\$(FolderName)"
+            }
+            else
+            {
+                return $Null
+            }
+        }
+        else
+        {
+            WriteNewestErrorMessage -LogType ERROR -LogString "Could not create user's home directory."
+            return $Null
+        }  
+    }
+
+    return $null
+}
+
+function Set-FolderPermissions
+{
+    param (
+        # Path to the folder
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Path,
+
+        # Sam name of the user
+        [Parameter(
+            Mandatory=$true
+        )]
+        [String]
+        $SamAccountName,
+
+        # Domain the user is created under
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Domain
+    )
+
+    # Get the current permissions of the home drive folder
+    $ACL = Get-Acl $HomeDrivePath
+
+    # The new NTFS permissions rule parameters 
+    $RuleParameters = @(
+        "$($Domain)\$($SAM)",
+        "FullControl",
+        @(
+            "ContainerInherit"
+            "ObjectInherit"
+        ),
+        "None",
+        "Allow"
+        )
+
+    # Add the rule to the current permissions list
+    $Rule = New-Object 
+        -TypeName System.Security.AccessControl.FileSystemAccessRule
+        -ArgumentList $RuleParameters
+
+    $ACL.SetAccessRule($Rule) 
+
+    # Set the NTFS permissions on the user's home folder to our new list
+    Set-Acl -Path $HomeDrivePath -AclObject $ACL
+}
+
+function New-HomeDrive
+{
+    param (
+        # Sam name of the user
+        [Parameter(
+            Mandatory=$true
+        )]
+        [String]
+        $SamAccountName,
+
+        # Domain the user is created under
+        [Parameter(
+            Mandatory=$true
+        )]
+        [String]
+        $Domain,
+
+        # The folder to create the new directory under
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $ParentFolderPath,
+
+        # The Name of the folder to create
+        [Parameter()]
+        [string]
+        $FolderName = $SamAccountName
+    )
+
+    $HomeDrive = New-Directory -ParentFolderPath $UserFolderDirectory -FolderName $SAM
+}
+
 # Copies properties from the mirrored user to the provided account
 function Set-MirroredProperties
 {
@@ -779,6 +912,51 @@ function Set-LDAPMailNickName
     catch 
     {
         Write-Warning "Could not set Mail Nickname field"
+    }
+}
+
+function Enable-UserMailbox
+{
+    param (
+        # The user the mailbox belongs to
+        [Parameter(
+            Mandatory=$true            
+        )]
+        [string]
+        $Identity,
+
+        # The user's email address
+        [Parameter(
+            Mandatory=$true     
+        )]
+        [String]
+        $Alias
+    )
+
+    try
+    {
+        Write-Space
+        add-pssnapin Microsoft.Exchange.Management.PowerShell.E2010 -ErrorAction Stop
+    }
+    catch
+    {
+        if ($_.Exception -like "*Microsoft.Exchange.Management.PowerShell.E2010 because it is already added*") { }
+        else
+        {
+            WriteNewestErrorMessage -LogType ERROR -LogString "Could not import Exchange Management module."
+            return $null
+        }
+    }
+
+    try 
+    {
+        Enable-Mailbox -identity $SAM -alias $Mail > $null
+        Write-Space
+        Write-Output "- Successfully enabled user mailbox."
+    }
+    catch
+    {
+        WriteNewestErrorMessage -LogType ERROR -LogString "Could not enable mailbox."
     }
 }
     
