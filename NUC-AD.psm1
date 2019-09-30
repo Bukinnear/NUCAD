@@ -681,57 +681,6 @@ function New-Directory
     return $null
 }
 
-function Set-FolderPermissions
-{
-    param (
-        # Path to the folder
-        [Parameter(
-            Mandatory=$true
-        )]
-        [string]
-        $Path,
-
-        # Sam name of the user
-        [Parameter(
-            Mandatory=$true
-        )]
-        [String]
-        $SamAccountName,
-
-        # Domain the user is created under
-        [Parameter(
-            Mandatory=$true
-        )]
-        [string]
-        $Domain
-    )
-
-    # Get the current permissions of the home drive folder
-    $ACL = Get-Acl $HomeDrivePath
-
-    # The new NTFS permissions rule parameters 
-    $RuleParameters = @(
-        "$($Domain)\$($SAM)",
-        "FullControl",
-        @(
-            "ContainerInherit"
-            "ObjectInherit"
-        ),
-        "None",
-        "Allow"
-        )
-
-    # Add the rule to the current permissions list
-    $Rule = New-Object 
-        -TypeName System.Security.AccessControl.FileSystemAccessRule
-        -ArgumentList $RuleParameters
-
-    $ACL.SetAccessRule($Rule) 
-
-    # Set the NTFS permissions on the user's home folder to our new list
-    Set-Acl -Path $HomeDrivePath -AclObject $ACL
-}
-
 function New-HomeDrive
 {
     param (
@@ -759,10 +708,94 @@ function New-HomeDrive
         # The Name of the folder to create
         [Parameter()]
         [string]
-        $FolderName = $SamAccountName
+        $FolderName = $SamAccountName, 
+
+        # Drive letter to assign
+        [Parameter()]
+        [string]
+        $DriveLetter = "H"
     )
 
-    $HomeDrive = New-Directory -ParentFolderPath $UserFolderDirectory -FolderName $SAM
+    try 
+    {
+        $HomeDrive = New-Directory -ParentFolderPath $UserFolderDirectory -FolderName $SAM        
+    }
+    catch 
+    {
+        Write-NewestErrorMessage -LogType ERROR -LogString "Could not set create user's home drive."
+        return $null        
+    }
+
+    if (!Set-FolderPermissions -SamAccountName $SAMAccountName -Domain $Domain -Path $HomeDrive)
+    {
+        Write-NewestErrorMessage -LogType ERROR -LogString "Could not set permissions on the users's home folder."
+        return $null
+    }
+
+    Set-HomeDrive -Identity $SamAccountName -HomeDrivePath $HomeDrive.FullName -DriveLetter $DriveLetter
+
+    return $HomeDrive
+}
+
+function Set-FolderPermissions
+{
+    param (
+        # Path to the folder
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Path,
+
+        # Sam name of the user
+        [Parameter(
+            Mandatory=$true
+        )]
+        [String]
+        $SamAccountName,
+
+        # Domain the user is created under
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Domain
+    )
+
+    try
+    {
+        # Get the current permissions of the home drive folder
+        $ACL = Get-Acl $Path
+
+        # The new NTFS permissions rule parameters 
+        $RuleParameters = @(
+            "$($Domain)\$($SamAccountName)",
+            "FullControl",
+            @(
+                "ContainerInherit"
+                "ObjectInherit"
+            ),
+            "None",
+            "Allow"
+            )
+
+        # Add the rule to the current permissions list
+        $Rule = New-Object 
+            -TypeName System.Security.AccessControl.FileSystemAccessRule
+            -ArgumentList $RuleParameters
+
+        $ACL.SetAccessRule($Rule) 
+
+        # Set the NTFS permissions on the user's home folder to our new list
+        Set-Acl -Path $Path -AclObject $ACL
+        
+        return $true
+    }
+    catch
+    {
+        Write-NewestErrorMessage -LogType ERROR -LogString "Could not set permissions on folder."
+        return $false
+    }
 }
 
 # Copies properties from the mirrored user to the provided account
@@ -816,7 +849,7 @@ function Set-MirroredGroups
     #Add account to mirrored user's group memberships
     try
     {
-        $NewUser | Add-AdPrincipalGroupMembership -MemberOf (Get-ADPrincipalGroupMembership $MirrorUser | Where {$_.name -ne 'Domain Users'})
+        Add-AdPrincipalGroupMembership -Identity $NewUser -MemberOf (Get-ADPrincipalGroupMembership $MirrorUser | Where {$_.name -ne 'Domain Users'})
         Write-Output "- User has been added to all mirrored user's groups"
     }
     catch
@@ -841,7 +874,7 @@ function Set-ProxyAddresses
             Mandatory=$true
         )]
         [string[]]
-        $ProxyAddresses,
+        $ProxyAddresses
     )
 
     try 
@@ -958,6 +991,94 @@ function Enable-UserMailbox
     {
         WriteNewestErrorMessage -LogType ERROR -LogString "Could not enable mailbox."
     }
+}
+
+function Set-UserFolderPermissions 
+{
+    param (
+        # Identity of the user to provide access to
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Identity,
+
+        # Domain the user is created under
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Domain,
+
+        # Path to the folder
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $FolderPath
+    )
+
+    # Get the current permissions of the home drive folder
+    $ACL = Get-Acl $HomeDrivePath
+
+    # The new NTFS permissions rule parameters 
+    $RuleParameters = @(
+        "$($Domain)\$($SAM)",
+        "FullControl",
+        @(
+            "ContainerInherit"
+            "ObjectInherit"
+        ),
+        "None",
+        "Allow"
+        )
+
+    # Add the rule to the current permissions list
+    $Rule = New-Object 
+        -TypeName System.Security.AccessControl.FileSystemAccessRule
+        -ArgumentList $RuleParameters
+
+    $ACL.SetAccessRule($Rule) 
+
+    # Set the NTFS permissions on the user's home folder to our new list
+    Set-Acl -Path $HomeDrivePath -AclObject $ACL
+    
+}
+
+function Set-HomeDrive 
+{
+    param (
+        # User identity to set the home drive on
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Identity,
+
+        # Path to the folder to set as the home drive
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $HomeDrivePath, 
+
+        # Drive letter to assign (Without colon, or backslash)
+        [Parameter()]
+        [string]
+        $DriveLetter = "H"
+    )
+
+    $DriveLetter = $DriveLetter[0] + ":"
+        
+    try
+    {
+        # Set home drive on the user's profile
+        Set-ADUser -SamAccountName $Identity -HomeDrive $DriveLetter -HomeDirectory $HomeDrivePath
+    }
+    catch
+    {
+        Write-NewestErrorMessage -LogType ERROR -LogString "Could not set the user's home drive"
+    }    
 }
     
 function Start-O365Sync 

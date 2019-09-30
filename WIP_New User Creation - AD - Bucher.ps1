@@ -2,7 +2,7 @@ Write-Output "Loading - please wait`r`n"
 $ErrorActionPreference = "Stop"
 
 # Path to new user creation module
-$Script:ScriptPath = (split-path -parent $MyInvocation.MyCommand.Definition)
+$Script:ScriptPath = split-path -parent $MyInvocation.MyCommand.Definition
 
 # For debugging purposes
 if (($ScriptPath -eq "") -or ($null -eq $ScriptPath))
@@ -114,11 +114,17 @@ Set-ProxyAddresses -Identity $NewUser -ProxyAddresses $ProxyAddresses
 Create the user's home drive
 ----------
 #>
+Write-Heading "Creating Home Drive"
 
 $Script:UserFolderDirectory = "\\mjemelfs2\user$"
 $Script:Domain = "vicmje"
 
-Create-HomeDrive
+$HomeDrive = New-HomeDrive 
+    -SamAccountName $SAM 
+    -Domain $Domain 
+    -ParentFolderPath $UserFolderDirectory 
+    -FolderName $SAM
+    -DriveLetter "H"
 
 <#
 ----------

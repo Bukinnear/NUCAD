@@ -57,7 +57,14 @@ $Script:EmailAddress = $ProxyAddresses[0]
 $Script:MirrorUser = Get-MirrorUser -UsernameFormat "Firstname Lastname = LastnameF"
 $Script:OU = Get-OU $MirrorUser
 
-$ConfirmUserCreation = Confirm-NewUserDetails -Firstname $Firstname -Lastname $Lastname -JobTitle $JobTitle -SamAccountName $SAM -EmailAddress $EmailAddress -Password $Password -MirrorUser $MirrorUser
+$ConfirmUserCreation = Confirm-NewUserDetails 
+    -Firstname $Firstname 
+    -Lastname $Lastname 
+    -JobTitle $JobTitle 
+    -SamAccountName $SAM 
+    -EmailAddress $EmailAddress 
+    -Password $Password 
+    -MirrorUser $MirrorUser
 
 # Confirm user creation
 if (!$ConfirmAccountCreation)
@@ -74,7 +81,16 @@ Create the account
 
 Write-Heading "Beginning user creation"
 
-$Script:NewUser = New-UserAccount -Firstname $Firstname -Lastname $Lastname -SamAccountName $SAM -UPN $UPN -JobTitle $JobTitle -PhoneNumber $PhoneNumber -MirrorUser $MirrorUser -OU $OU -Password $Password
+$Script:NewUser = New-UserAccount 
+    -Firstname $Firstname 
+    -Lastname $Lastname 
+    -SamAccountName $SAM 
+    -UPN $UPN 
+    -JobTitle $JobTitle 
+    -PhoneNumber $PhoneNumber 
+    -MirrorUser $MirrorUser 
+    -OU $OU 
+    -Password $Password
 
 if ($NewUser)
 {    
@@ -84,7 +100,7 @@ if ($NewUser)
 else
 {
     Write-Space
-    Write-Warning "`r`nThere was an error creating the account. Exiting"
+    Write-Warning "There was an error creating the account. Exiting"
     return
 }
 
