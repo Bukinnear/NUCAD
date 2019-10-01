@@ -47,7 +47,6 @@ If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
     return
 }
 
-# NOTE: Test this section, I am not sure how it will react when assigning the primary address if it already exists.
 $Script:Mail = $FirstName + "." + $LastName
 $Script:PrimaryDomain = "Ceda.com.au"
 $Script:SecondaryDomains = @("CEDA.mail.onmicrosoft.com")
@@ -60,13 +59,13 @@ $Script:MirrorUser = Get-MirrorUser -UsernameFormat "Firstname Lastname = Lastna
 $Script:OU = Get-OU $MirrorUser
 
 $ConfirmUserCreation = Confirm-NewAccountDetails `
--Firstname $Firstname `
--Lastname $Lastname `
--JobTitle $JobTitle `
--SamAccountName $SAM `
--EmailAddress $EmailAddress `
--Password $Password `
--MirrorUser $MirrorUser
+    -Firstname $Firstname `
+    -Lastname $Lastname `
+    -JobTitle $JobTitle `
+    -SamAccountName $SAM `
+    -EmailAddress $EmailAddress `
+    -Password $Password `
+    -MirrorUser $MirrorUser
 
 # Confirm user creation
 if (!$ConfirmAccountCreation)

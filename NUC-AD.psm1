@@ -258,7 +258,7 @@ function Get-Addresses
         
         foreach ($Domain in $SecondaryDomains)
         {
-            $ProxyAddresses += "smtp:$($MailName)@$($Domain)"            
+            $ProxyAddresses += "smtp:$($MailName)@$($Domain)" 
         }
 
         $ReturnValue = @($PrimaryAddress, $ProxyAddresses)
@@ -356,7 +356,7 @@ function Get-NewAccount
     {
         try 
         {
-            $User = Get-ADUser $SamAccountName
+            $User = Get-ADUser $SamAccountName -Properties *
             return $User
         } 
         catch 
@@ -440,9 +440,14 @@ function Confirm-AccountDoesNotExist
 
     try 
     {
-        get-ADUser -identity $SAM > $null
-        return $null
-    } catch 
+        $Test = get-ADUser -identity $SamAccountName
+    } catch {}
+
+    if ($Test)
+    {
+        return $false
+    }
+    else 
     {
         return $true
     }
@@ -583,7 +588,7 @@ function New-UserAccount
     {
         Write-Warning "`r`nCould not assign password to new user."
 
-        $NewUser = Get-NewAccount -SamAccountName $SAM
+        $NewUser = Get-NewAccount -SamAccountName $SamAccountName
         if (!$NewUser)
         {
             Write-NewestErrorMessage -LogType ERROR -LogString "Could not find new account."
@@ -605,7 +610,8 @@ function New-UserAccount
             }
             catch
             {
-                Write-NewestErrorMessage -LogType WARNING -LogString "Failed to set account password. Please try again."
+                Write-Space
+                Write-Warning "`r`nFailed to set account password. Please try again."
                 continue
             }
         }
@@ -617,7 +623,7 @@ function New-UserAccount
     }
 
     # NOTE: Check that this works as expected
-    if ($NewUser = Get-NewAccount $SAM)
+    if ($NewUser = Get-NewAccount $SamAccountName)
     {
         return $NewUser
     }
@@ -668,7 +674,7 @@ function New-Directory
         }
         else
         {
-            WriteNewestErrorMessage -LogType ERROR -LogString "Could not create user's home directory."
+            Write-NewestErrorMessage -LogType ERROR -LogString "Could not create user's home directory."
             return $Null
         }  
     }
@@ -801,7 +807,7 @@ function Set-MirroredProperties
         [Parameter(
             Mandatory=$true
         )]
-        [string]
+        [Microsoft.ActiveDirectory.Management.ADUser]
         $Identity,
 
         # User to mirror properties from
@@ -811,15 +817,14 @@ function Set-MirroredProperties
         [Microsoft.ActiveDirectory.Management.ADUser]
         $MirrorUser
     )
-
     try
     {
-        Set-ADUser -Identity $NewUser -Manager $MirrorUser.manager -State $MirrorUser.st -Country $MirrorUser.c -PostalCode $MirrorUser.postalCode -StreetAddress $MirrorUser.streetAddress -City $MirrorUser.l -Office $MirrorUser.physicalDeliveryOfficeName -HomePage $MirrorUser.HomePage
+        Set-ADUser -Identity $Identity -Manager $MirrorUser.manager -State $MirrorUser.st -Country $MirrorUser.c -PostalCode $MirrorUser.postalCode -StreetAddress $MirrorUser.streetAddress -City $MirrorUser.l -Office $MirrorUser.physicalDeliveryOfficeName -HomePage $MirrorUser.HomePage        
         Write-Output "- Address and manager have been set."
     }
     catch
     {
-        WriteNewestErrorMessage -LogType WARNING -LogString "Could not set some parameters - please double check the new account's address and manager"    
+        Write-NewestErrorMessage -LogType WARNING -LogString "Could not set some parameters - please double check the new account's address and manager"    
     }
 }
 
@@ -844,12 +849,12 @@ function Set-MirroredGroups
     #Add account to mirrored user's group memberships
     try
     {
-        Add-AdPrincipalGroupMembership -Identity $NewUser -MemberOf (Get-ADPrincipalGroupMembership $MirrorUser | Where {$_.name -ne 'Domain Users'})
+        Add-AdPrincipalGroupMembership -Identity $Identity -MemberOf (Get-ADPrincipalGroupMembership $MirrorUser | Where {$_.name -ne 'Domain Users'})
         Write-Output "- User has been added to all mirrored user's groups"
     }
     catch
     {
-        WriteNewestErrorMessage -LogType ERROR -LogString "Could not add user to all groups - please doublecheck group memebrships"
+        Write-NewestErrorMessage -LogType ERROR -LogString "Could not add user to all groups - please doublecheck group memebrships"
     }
     
 }
@@ -874,12 +879,12 @@ function Set-ProxyAddresses
 
     try 
     {
-        Set-ADUser -Identity $NewUser -Add @{ProxyAddresses = $ProxyAddresses}
+        Set-ADUser -Identity $Identity -Add @{ProxyAddresses = $ProxyAddresses}
         Write-Host "- Set Proxy Addresses"
     }
     catch 
     {
-        Write-Warning "Could not set Proxy Addresses"
+        Write-NewestErrorMessage -LogType WARNING -LogString "Could not set Proxy Addresses"
         
     }
 }
@@ -904,12 +909,12 @@ function Set-LDAPMail
 
     try 
     {
-        Set-ADUser -Identity $NewUser -add @{Mail = $PrimarySmtpAddress}
+        Set-ADUser -Identity $Identity -add @{Mail = $PrimarySmtpAddress}
         Write-Host "- Set Mail field"            
     }
     catch 
     {
-        Write-Warning "Could not set Mail field"
+        Write-NewestErrorMessage -LogType WARNING -LogString "Could not set Mail field"
     }
     
 }
@@ -934,12 +939,12 @@ function Set-LDAPMailNickName
 
     try 
     {
-        Set-ADUser -Identity $NewUser -add @{MailNickName = $SAM}
+        Set-ADUser -Identity $Identity -add @{MailNickName = $SamAccountName}
         Write-Host "- Set Mail Nickname field"
     }
     catch 
     {
-        Write-Warning "Could not set Mail Nickname field"
+        Write-NewestErrorMessage -LogType WARNING -LogString "Could not set Mail Nickname field"
     }
 }
 
@@ -971,20 +976,20 @@ function Enable-UserMailbox
         if ($_.Exception -like "*Microsoft.Exchange.Management.PowerShell.E2010 because it is already added*") { }
         else
         {
-            WriteNewestErrorMessage -LogType ERROR -LogString "Could not import Exchange Management module."
+            Write-NewestErrorMessage -LogType ERROR -LogString "Could not import Exchange Management module."
             return $null
         }
     }
 
     try 
     {
-        Enable-Mailbox -identity $SAM -alias $Mail > $null
+        Enable-Mailbox -identity $Identity -alias $Alias > $null
         Write-Space
         Write-Output "- Successfully enabled user mailbox."
     }
     catch
     {
-        WriteNewestErrorMessage -LogType ERROR -LogString "Could not enable mailbox."
+        Write-NewestErrorMessage -LogType ERROR -LogString "Could not enable mailbox."
     }
 }
 
@@ -996,7 +1001,7 @@ function Set-UserFolderPermissions
             Mandatory=$true
         )]
         [string]
-        $Identity,
+        $SamAccountName,
 
         # Domain the user is created under
         [Parameter(
@@ -1018,7 +1023,7 @@ function Set-UserFolderPermissions
 
     # The new NTFS permissions rule parameters 
     $RuleParameters = @(
-        "$($Domain)\$($SAM)",
+        "$($Domain)\$($SamAccountName)",
         "FullControl",
         @(
             "ContainerInherit"

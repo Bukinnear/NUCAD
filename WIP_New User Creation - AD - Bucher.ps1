@@ -59,13 +59,13 @@ If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
 $Script:MirrorUser = Get-MirrorUser -UsernameFormat "Firstname Lastname = Firstname.Lastname"
 $Script:OU = Get-OU $MirrorUser
 
-$ConfirmUserCreation = Confirm-NewUserDetails 
-    -Firstname $Firstname 
-    -Lastname $Lastname 
-    -JobTitle $JobTitle 
-    -SamAccountName $SAM 
-    -EmailAddress $EmailAddress 
-    -Password $Password 
+$ConfirmUserCreation = Confirm-NewUserDetails `
+    -Firstname $Firstname `
+    -Lastname $Lastname `
+    -JobTitle $JobTitle `
+    -SamAccountName $SAM `
+    -EmailAddress $EmailAddress `
+    -Password $Password `
     -MirrorUser $MirrorUser
 
 # Confirm user creation
@@ -83,15 +83,15 @@ Create the account
 
 Write-Heading "Beginning user creation"
 
-$Script:NewUser = New-UserAccount 
-    -Firstname $Firstname 
-    -Lastname $Lastname 
-    -SamAccountName $SAM 
-    -UPN $UPN 
-    -JobTitle $JobTitle 
-    -PhoneNumber $PhoneNumber 
-    -MirrorUser $MirrorUser 
-    -OU $OU 
+$Script:NewUser = New-UserAccount `
+    -Firstname $Firstname `
+    -Lastname $Lastname `
+    -SamAccountName $SAM `
+    -UPN $UPN `
+    -JobTitle $JobTitle `
+    -PhoneNumber $PhoneNumber `
+    -MirrorUser $MirrorUser `
+    -OU $OU `
     -Password $Password
 
 if ($NewUser)
