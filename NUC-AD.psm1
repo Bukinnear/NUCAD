@@ -1,4 +1,5 @@
 $LogPath = 'C:\temp\UserCreationADLog.txt'
+$ErrorsFound = $false
 
 Add-Type -TypeDefinition @"
    public enum LogTypes
@@ -52,9 +53,20 @@ function Write-NewestErrorMessage
     param(
         [Parameter(Mandatory=$true)]
         [LogTypes] $LogType, 
+
+        # The caught error
+        [Parameter()]
+        [System.Management.Automation.ErrorRecord]
+        $CaughtError,
+
+        # Wheter or not to output to file. Default is true
+        [Parameter()]
+        [bool]
+        $LogToFile = $false,
             
         [Parameter()]
-        [String] $LogString    
+        [String] 
+        $LogString    
     )        
 
     Switch ($LogType.ToString())
@@ -75,14 +87,17 @@ function Write-NewestErrorMessage
 
     Write-Host -ForegroundColor $LogColour "`r`n$($LogType): $($LogString)"
     Write-Host "`r`nFull Details:"
-    Write-Host -ForegroundColor $LogColour "$($LogType.ToString()): $($Error[0].Exception.Message)`r`n"
-    
-    $LogFileText = "$(Get-Date -Format "yyyy/MM/dd | HH:mm:ss") | $($LogType.ToString()) | $($LogString) : $($Error[0].Exception.Message)"
-    Out-File -FilePath $LogPath -Append -InputObject $LogFileText
+    Write-Host -ForegroundColor $LogColour "$($LogType.ToString())`r`nCategory: $($CaughtError.CategoryInfo.Category)`r`nMessage: $($CaughtError.Exception.Message)`r`n"
 
-    if ($LogType.ToString() -ne "DEBUG")
+    if ($LogToFile)
     {
-        Write-Warning "`r`nA log has been generated and can be found at $($LogPath).`r`nIf this was unexpected, please send this log to the maintainer."
+        $LogFileText = "$(Get-Date -Format "yyyy/MM/dd | HH:mm:ss") | $($LogType.ToString()) | $($LogString) | Error Category: $($CaughtError.CategoryInfo.Category); Message: $($CaughtError.Exception.Message)"
+        Out-File -FilePath $LogPath -Append -InputObject $LogFileText
+
+        if ($LogType.ToString() -ne "DEBUG")
+        {
+            $ErrorsFound = $true
+        }
     }
 }
 
@@ -93,7 +108,7 @@ try
 }
 catch
 {
-    Write-NewestErrorMessage -LogType ERROR -LogString "Could not import Active Directory Module. Aborting."
+    Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Active Directory Module. Aborting."
     return
 }
 <#
@@ -308,7 +323,7 @@ function Get-MirrorUser
         catch 
         {
             Write-Space
-            Write-NewestErrorMessage -LogType WARNING -LogString "Could not find any user with that username."
+            Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogString "Could not find any user with that username."
             continue
         }
     }
@@ -581,7 +596,7 @@ function New-UserAccount
     }
     catch [UnauthorizedAccessException]
     {
-        Write-NewestErrorMessage -LogType ERROR -LogString "Could not create the user - please run this script as admin."
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogString "Could not create the user - please run this script as admin."
         return $null
     }
     catch [Microsoft.ActiveDirectory.Management.ADPasswordComplexityException]
@@ -591,7 +606,7 @@ function New-UserAccount
         $NewUser = Get-NewAccount -SamAccountName $SamAccountName
         if (!$NewUser)
         {
-            Write-NewestErrorMessage -LogType ERROR -LogString "Could not find new account."
+            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not find new account after assigning the password"
             return $null
         }
         
@@ -618,7 +633,7 @@ function New-UserAccount
     }
     catch
     {    
-        Write-NewestErrorMessage -LogType ERROR -LogString "Failed to create new user. Exiting"
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Failed to create new user. Exiting"
         return $null
     }
 
@@ -674,7 +689,7 @@ function New-Directory
         }
         else
         {
-            Write-NewestErrorMessage -LogType ERROR -LogString "Could not create user's home directory."
+            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not create user's home directory."
             return $Null
         }  
     }
@@ -723,13 +738,13 @@ function New-HomeDrive
     }
     catch 
     {
-        Write-NewestErrorMessage -LogType ERROR -LogString "Could not set create user's home drive."
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set create user's home drive."
         return $null        
     }
 
     if (!Set-FolderPermissions -SamAccountName $SAMAccountName -Domain $Domain -Path $HomeDrive)
     {
-        Write-NewestErrorMessage -LogType ERROR -LogString "Could not set permissions on the users's home folder."
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set permissions on the users's home folder."
         return $null
     }
 
@@ -794,7 +809,7 @@ function Set-FolderPermissions
     }
     catch
     {
-        Write-NewestErrorMessage -LogType ERROR -LogString "Could not set permissions on folder."
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set permissions on folder."
         return $false
     }
 }
@@ -824,7 +839,7 @@ function Set-MirroredProperties
     }
     catch
     {
-        Write-NewestErrorMessage -LogType WARNING -LogString "Could not set some parameters - please double check the new account's address and manager"    
+        Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogToFile $true -LogString "Could not set some parameters - please double check the new account's address and manager"    
     }
 }
 
@@ -846,15 +861,25 @@ function Set-MirroredGroups
         [Microsoft.ActiveDirectory.Management.ADUser]
         $MirrorUser
     )
+
+    try 
+    {
+        $Groups = Get-ADPrincipalGroupMembership $MirrorUser | Where {$_.name -ne 'Domain Users'}
+    }
+    catch 
+    {
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not get $($MirrorUser.DisplayName)'s groups - please add memberships manually"
+    }
+
     #Add account to mirrored user's group memberships
     try
     {
-        Add-AdPrincipalGroupMembership -Identity $Identity -MemberOf (Get-ADPrincipalGroupMembership $MirrorUser | Where {$_.name -ne 'Domain Users'})
+        Add-AdPrincipalGroupMembership -Identity $Identity -MemberOf $Groups
         Write-Output "- User has been added to all mirrored user's groups"
     }
     catch
     {
-        Write-NewestErrorMessage -LogType ERROR -LogString "Could not add user to all groups - please doublecheck group memebrships"
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not add user to all groups - please doublecheck group memberships"
     }
     
 }
@@ -884,7 +909,7 @@ function Set-ProxyAddresses
     }
     catch 
     {
-        Write-NewestErrorMessage -LogType WARNING -LogString "Could not set Proxy Addresses"
+        Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogToFile $true -LogString "Could not set Proxy Addresses"
         
     }
 }
@@ -914,7 +939,7 @@ function Set-LDAPMail
     }
     catch 
     {
-        Write-NewestErrorMessage -LogType WARNING -LogString "Could not set Mail field"
+        Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogToFile $true -LogString "Could not set Mail field"
     }
     
 }
@@ -944,7 +969,7 @@ function Set-LDAPMailNickName
     }
     catch 
     {
-        Write-NewestErrorMessage -LogType WARNING -LogString "Could not set Mail Nickname field"
+        Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogToFile $true -LogString "Could not set Mail Nickname field"
     }
 }
 
@@ -976,7 +1001,7 @@ function Enable-UserMailbox
         if ($_.Exception -like "*Microsoft.Exchange.Management.PowerShell.E2010 because it is already added*") { }
         else
         {
-            Write-NewestErrorMessage -LogType ERROR -LogString "Could not import Exchange Management module."
+            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Exchange Management module."
             return $null
         }
     }
@@ -989,7 +1014,7 @@ function Enable-UserMailbox
     }
     catch
     {
-        Write-NewestErrorMessage -LogType ERROR -LogString "Could not enable mailbox."
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not enable mailbox."
     }
 }
 
@@ -1077,7 +1102,7 @@ function Set-HomeDrive
     }
     catch
     {
-        Write-NewestErrorMessage -LogType ERROR -LogString "Could not set the user's home drive"
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set the user's home drive"
     }    
 }
     
