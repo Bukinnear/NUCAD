@@ -150,7 +150,7 @@ function Get-FullName
     param (
         # Choose whether to prompt for, and fix capitalisation
         [Parameter()]
-        [ParameterType]
+        [bool]
         $PromptForCapitalisation=$true
     )
 
@@ -253,17 +253,19 @@ function Get-Addresses
     
     for (;;)
     {        
-        $PrimaryAddress = "SMTP:$($Mail)@$($PrimaryDomain)"
-        $ProxyAddresses = @($PrimaryAddress)
+        $PrimaryAddress = "$($MailName)@$($PrimaryDomain)"
+        $ProxyAddresses = @("SMTP:$($PrimaryAddress)")
         
         foreach ($Domain in $SecondaryDomains)
         {
-            $ProxyAddresses += "smtp:$($Mail)@$($Domain)"            
+            $ProxyAddresses += "smtp:$($MailName)@$($Domain)"            
         }
 
-        if (Confirm-PrimarySMTPAddress -PrimarySMTP $EmailAddress) 
+        $ReturnValue = @($PrimaryAddress, $ProxyAddresses)
+
+        if (Confirm-PrimarySMTPAddress -PrimarySMTP $PrimaryAddress) 
         {
-            return $ProxyAddresses
+            return $ReturnValue
         }
         else 
         {
@@ -272,7 +274,7 @@ function Get-Addresses
     }
 }
 
-# Gets the username 
+# Gets the user specified by the username.
 function Get-MirrorUser 
 {
     param (
@@ -355,7 +357,7 @@ function Get-NewAccount
         try 
         {
             $User = Get-ADUser $SamAccountName
-            break
+            return $User
         } 
         catch 
         { 
@@ -364,14 +366,7 @@ function Get-NewAccount
         }
     }
 
-    if ($User)
-    {        
-        return $User
-    }
-    else
-    {
-        return $null
-    }
+    return $null
 }
 
 # Optimises the given name by removing leading/trailing white space, illegal characters, and capitalising the first letter if required
@@ -806,7 +801,7 @@ function Set-MirroredProperties
         [Parameter(
             Mandatory=$true
         )]
-        [Microsoft.ActiveDirectory.Management.ADUser]
+        [string]
         $Identity,
 
         # User to mirror properties from
@@ -819,12 +814,12 @@ function Set-MirroredProperties
 
     try
     {
-        Set-ADUser -Identity $NewUser.identity -Manager $MirrorUser.manager -State $MirrorUser.st -Country $MirrorUser.c -PostalCode $MirrorUser.postalCode -StreetAddress $MirrorUser.streetAddress -City $MirrorUser.l -Office $MirrorUser.physicalDeliveryOfficeName -HomePage $MirrorUser.HomePage
+        Set-ADUser -Identity $NewUser -Manager $MirrorUser.manager -State $MirrorUser.st -Country $MirrorUser.c -PostalCode $MirrorUser.postalCode -StreetAddress $MirrorUser.streetAddress -City $MirrorUser.l -Office $MirrorUser.physicalDeliveryOfficeName -HomePage $MirrorUser.HomePage
         Write-Output "- Address and manager have been set."
     }
     catch
     {
-        WriteNewestErrorMessage -LogType WARNING -LogString "Could not set some parameters - please double check the account's address and manager"    
+        WriteNewestErrorMessage -LogType WARNING -LogString "Could not set some parameters - please double check the new account's address and manager"    
     }
 }
 

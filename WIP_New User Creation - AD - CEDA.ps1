@@ -51,20 +51,22 @@ If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
 $Script:Mail = $FirstName + "." + $LastName
 $Script:PrimaryDomain = "Ceda.com.au"
 $Script:SecondaryDomains = @("CEDA.mail.onmicrosoft.com")
-$Script:ProxyAddresses = @(Get-Addresses -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains)
-$Script:EmailAddress = $ProxyAddresses[0]
+
+$Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
+$Script:EmailAddress = $Addresses[0]
+$Script:ProxyAddresses = $Addresses[1]
 
 $Script:MirrorUser = Get-MirrorUser -UsernameFormat "Firstname Lastname = LastnameF"
 $Script:OU = Get-OU $MirrorUser
 
-$ConfirmUserCreation = Confirm-NewUserDetails 
-    -Firstname $Firstname 
-    -Lastname $Lastname 
-    -JobTitle $JobTitle 
-    -SamAccountName $SAM 
-    -EmailAddress $EmailAddress 
-    -Password $Password 
-    -MirrorUser $MirrorUser
+$ConfirmUserCreation = Confirm-NewAccountDetails `
+-Firstname $Firstname `
+-Lastname $Lastname `
+-JobTitle $JobTitle `
+-SamAccountName $SAM `
+-EmailAddress $EmailAddress `
+-Password $Password `
+-MirrorUser $MirrorUser
 
 # Confirm user creation
 if (!$ConfirmAccountCreation)
@@ -81,15 +83,15 @@ Create the account
 
 Write-Heading "Beginning user creation"
 
-$Script:NewUser = New-UserAccount 
-    -Firstname $Firstname 
-    -Lastname $Lastname 
-    -SamAccountName $SAM 
-    -UPN $UPN 
-    -JobTitle $JobTitle 
-    -PhoneNumber $PhoneNumber 
-    -MirrorUser $MirrorUser 
-    -OU $OU 
+$Script:NewUser = New-UserAccount `
+    -Firstname $Firstname `
+    -Lastname $Lastname `
+    -SamAccountName $SAM `
+    -UPN $UPN `
+    -JobTitle $JobTitle `
+    -PhoneNumber $PhoneNumber `
+    -MirrorUser $MirrorUser `
+    -OU $OU `
     -Password $Password
 
 if ($NewUser)

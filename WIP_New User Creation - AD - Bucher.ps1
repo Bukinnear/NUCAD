@@ -38,11 +38,14 @@ $Script:SAM = $FirstName + "." + $LastName
 # LDAP Field: UserPrincipleName (User Logon Name).
 $Script:UPN = "$($FirstName).$($LastName)@Macdonald-Johnston.com.au"
 
-# NOTE: Test this section, I am not sure how it will react when assigning the primary address if it already exists.
 $Script:Mail = $FirstName + "." + $LastName
 $Script:PrimaryDomain = "BucherMunicipal.com.au"
 $Script:SecondaryDomains = @("Bucher.com.au", "JDMacdonald.com.au", "MacdonaldJohnston.com.au", "Macdonald-Johnston.com.au", "MJE.com.au")
-$Script:ProxyAddresses = @(Get-Addresses -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains)
+
+$Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
+$Script:EmailAddress = $Addresses[0]
+$Script:ProxyAddresses = $Addresses[1]
+
 $Script:EmailAddress = $ProxyAddresses[0]
 
 # Ensure that this account does not already exist
@@ -107,13 +110,13 @@ Write-Heading "Populating account details."
 
 Set-MirroredProperties -Identity $NewUser -MirrorUser $MirrorUser
 Set-MirroredGroups -Identity $NewUser -MirrorUser $MirrorUser
-Set-ProxyAddresses -Identity $NewUser -ProxyAddresses $ProxyAddresses
 
 <#
 ----------
 Create the user's home drive
 ----------
 #>
+
 Write-Heading "Creating Home Drive"
 
 $Script:UserFolderDirectory = "\\mjemelfs2\user$"
