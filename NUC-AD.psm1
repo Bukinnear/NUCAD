@@ -91,7 +91,7 @@ function Write-NewestErrorMessage
 
     if ($LogToFile)
     {
-        $LogFileText = "$(Get-Date -Format "yyyy/MM/dd | HH:mm:ss") | $($LogType.ToString()) | $($LogString) | Error Category: $($CaughtError.CategoryInfo.Category); Message: $($CaughtError.Exception.Message)"
+        $LogFileText = "$(Get-Date -Format "yyyy/MM/dd | HH:mm:ss") | $($LogType.ToString()) | $($LogString) | Category: $($CaughtError.CategoryInfo.Category) | Message: $($CaughtError.Exception.Message)"
         Out-File -FilePath $LogPath -Append -InputObject $LogFileText
 
         if ($LogType.ToString() -ne "DEBUG")
@@ -101,28 +101,32 @@ function Write-NewestErrorMessage
     }
 }
 
-# Import AD Module
-try
+# Needs to be run before anything else is called. Returns true if successfull, and false if failed.
+function Initialize-Module
 {
-    # Import-Module ActiveDirectory -ErrorAction Stop
-}
-catch
-{
-    Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Active Directory Module. Aborting."
-    return
-}
-<#
-# Check if we are running as admin
-$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-If (!$currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
-{
-    Write-Warning "No admin priviledges detected.`r`n"
-    if (!(Get-Confirmation "WARNING: This script is not running as admin, you will probably be unable to create the user account.`r`n`r`nAre you sure you want to continue?"))
+    # Import AD Module
+    try
     {
-        return
-    }    
+        Import-Module ActiveDirectory -ErrorAction Stop
+    }
+    catch
+    {
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Active Directory Module. Aborting."
+        return $false
+    }
+    
+    # Check if we are running as admin
+    $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+    If (!$currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
+    {
+        Write-Warning "No admin priviledges detected.`r`n"
+        if (!(Get-Confirmation "WARNING: This script is not running as admin, you will probably be unable to create the user account.`r`n`r`nAre you sure you want to continue?"))
+        {
+            return $false
+        }    
+    }
+    return $true
 }
-#>
 
 # Writes an empty line to the console
 function Write-Space
@@ -227,7 +231,7 @@ function Get-Password
         # The password to set it to
         [Parameter()]
         [string]
-        $Password = '$Password99!'
+        $Password = 'Password99!'
     )
     
     # Allow for a custom password
@@ -518,12 +522,12 @@ function Confirm-NewAccountDetails
 
         [Parameter(
             Mandatory=$true)]
-        [string]
+        [Microsoft.ActiveDirectory.Management.ADUser]
         $MirrorUser
 
     )
 
-    $ConfirmationMessage = "You are about to create an account with the following details:`r`n`r`nFirst Name: $($Firstname)`r`n`r`nLast Name: $($Lastname)`r`n`r`nJob Title: $($JobTitle)`r`n`r`nUsername: $($SamAccountName)`r`n`r`nEmail Address: $($EmailAddress)`r`n`r`nAccount Password: $($Password)`r`n`r`nAccount to Mirror: $($MirrorUser.DisplayName)`r`n`r`nDo you wish to proceed?"
+    $ConfirmationMessage = "----------`r`nYou are about to create an account with the following details:`r`n`r`nFirst Name: $($Firstname)`r`n`r`nLast Name: $($Lastname)`r`n`r`nJob Title: $($JobTitle)`r`n`r`nUsername: $($SamAccountName)`r`n`r`nEmail Address: $($EmailAddress)`r`n`r`nAccount Password: $($Password)`r`n`r`nAccount to Mirror: $($MirrorUser.DisplayName)`r`n`r`nDo you wish to proceed?"
     return (Get-Confirmation $ConfirmationMessage)
 }
 
@@ -869,7 +873,15 @@ function Set-MirroredGroups
     catch 
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not get $($MirrorUser.DisplayName)'s groups - please add memberships manually"
+        return
     }
+
+    Write-Host "`r`n----------`r`n$($MirrorUser.DisplayName) is part of the following groups:`r`n----------`r`n"
+    foreach ($Group in $Groups)
+    {
+        Write-Host "- $($Group.Name)"
+    }
+    Write-Host "----------`r`n"
 
     #Add account to mirrored user's group memberships
     try
@@ -880,8 +892,7 @@ function Set-MirroredGroups
     catch
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not add user to all groups - please doublecheck group memberships"
-    }
-    
+    }    
 }
 
 function Set-ProxyAddresses
