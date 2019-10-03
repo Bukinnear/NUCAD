@@ -122,13 +122,19 @@ Write-Heading "Creating Home Drive"
 $Script:UserFolderDirectory = "\\mjemelfs2\user$"
 $Script:Domain = "vicmje"
 
-$HomeDrive = New-HomeDrive 
-    -SamAccountName $SAM 
-    -Domain $Domain 
-    -ParentFolderPath $UserFolderDirectory 
-    -FolderName $SAM
-    -DriveLetter "H"
+$HomeDrive = New-UserFolder `
+    -SamAccountName $SAM `
+    -Domain $Domain `
+    -ParentFolderPath $UserFolderDirectory `
+    -FolderName $SAM`
 
+if ($HomeDrive)
+{
+    Set-HomeDrive `
+    -Identity $SAM `
+    -HomeDrivePath $HomeDrive.$Fullname `
+    -DriveLetter 'H'    
+}
 <#
 ----------
 Enable the user's mailbox

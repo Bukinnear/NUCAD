@@ -698,10 +698,10 @@ function New-Directory
         }  
     }
 
-    return $null
+    return $Null
 }
 
-function New-HomeDrive
+function New-UserFolder
 {
     param (
         # Sam name of the user
@@ -728,31 +728,20 @@ function New-HomeDrive
         # The Name of the folder to create
         [Parameter()]
         [string]
-        $FolderName = $SamAccountName, 
-
-        # Drive letter to assign
-        [Parameter()]
-        [string]
-        $DriveLetter = "H"
+        $FolderName = $SamAccountName
     )
 
-    try 
+    if (!($HomeDrive = New-Directory -ParentFolderPath $UserFolderDirectory -FolderName $SAM))
     {
-        $HomeDrive = New-Directory -ParentFolderPath $UserFolderDirectory -FolderName $SAM        
-    }
-    catch 
-    {
-        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set create user's home drive."
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not create user's folder."
         return $null        
     }
 
     if (!Set-FolderPermissions -SamAccountName $SAMAccountName -Domain $Domain -Path $HomeDrive)
     {
-        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set permissions on the users's home folder."
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set permissions on the users's folder."
         return $null
     }
-
-    Set-HomeDrive -Identity $SamAccountName -HomeDrivePath $HomeDrive.FullName -DriveLetter $DriveLetter
 
     return $HomeDrive
 }
