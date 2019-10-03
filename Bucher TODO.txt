@@ -1,3 +1,0 @@
-1. Create home directory
-2. Set home directory permissions
-3. Set home directory in user profile
