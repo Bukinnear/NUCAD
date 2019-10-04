@@ -1,4 +1,4 @@
-$LogPath = 'C:\temp\UserCreationADLog.txt'
+$LogPath = 'C:\temp\UserCreationLogs\UserCreationADLog.txt'
 $ErrorsFound = $false
 
 Add-Type -TypeDefinition @"
@@ -681,10 +681,11 @@ function New-Directory
     {
         If ($_.CategoryInfo.Category -eq "ResourceExists")
         {
-            write-warning "User's home folder already exists"
-            if (!(PromptForConfirmation "`r`nAn existing folder has been found at $($ParentFolderPath)\$(FolderName)`r`n`r`nAre you sure you want to continue with this folder?`r`n(If you choose 'No', you will need to set up the user's home drive manually)"))
+            write-warning "User's folder already exists"
+
+            if (Get-Confirmation "`r`nAn existing folder has been found at $($ParentFolderPath)\$($FolderName)`r`n`r`nAre you sure you want to continue with this folder?`r`n(If you choose 'No', you will need to set up the user's home drive manually)")
             {
-                return Get-Item -Path "$($ParentFolderPath)\$(FolderName)"
+                return Get-Item -Path "$($ParentFolderPath)\$($FolderName)"
             }
             else
             {
@@ -693,7 +694,7 @@ function New-Directory
         }
         else
         {
-            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not create user's home directory."
+            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not create user's folder."
             return $Null
         }  
     }
@@ -731,13 +732,13 @@ function New-UserFolder
         $FolderName = $SamAccountName
     )
 
-    if (!($HomeDrive = New-Directory -ParentFolderPath $UserFolderDirectory -FolderName $SAM))
+    if (!($HomeDrive = New-Directory -ParentFolderPath $ParentFolderPath -FolderName $FolderName))
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not create user's folder."
         return $null        
     }
 
-    if (!Set-FolderPermissions -SamAccountName $SAMAccountName -Domain $Domain -Path $HomeDrive)
+    if (!(Set-FolderPermissions -SamAccountName $SAMAccountName -Domain $Domain -Path $HomeDrive.FullName))
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set permissions on the users's folder."
         return $null
@@ -789,8 +790,8 @@ function Set-FolderPermissions
             )
 
         # Add the rule to the current permissions list
-        $Rule = New-Object 
-            -TypeName System.Security.AccessControl.FileSystemAccessRule
+        $Rule = New-Object `
+            -TypeName System.Security.AccessControl.FileSystemAccessRule `
             -ArgumentList $RuleParameters
 
         $ACL.SetAccessRule($Rule) 
@@ -1102,7 +1103,7 @@ function Set-HomeDrive
     }
     catch
     {
-        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set the user's home drive"
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set the user profile's home drive"
     }    
 }
     

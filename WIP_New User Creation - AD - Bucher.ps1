@@ -126,7 +126,7 @@ $HomeDrive = New-UserFolder `
     -SamAccountName $SAM `
     -Domain $Domain `
     -ParentFolderPath $UserFolderDirectory `
-    -FolderName $SAM`
+    -FolderName $SAM
 
 if ($HomeDrive)
 {
