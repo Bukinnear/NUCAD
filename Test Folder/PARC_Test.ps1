@@ -38,13 +38,3 @@ $Script:MirrorUser = Get-ADUser "test.automation" -Properties *
 $Script:OU = Get-OU $MirrorUser
 $Script:NewUser = get-aduser "test.automation2" -Properties *
 
-
-<#
-----------
-Enable the user's mailbox
-----------
-#>
-
-Write-Heading "Mailbox"
-
-Enable-UserMailbox -Identity $SAM -Alias $Mail -Database "PARCMELPRIDB"

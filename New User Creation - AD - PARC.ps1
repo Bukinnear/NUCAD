@@ -47,8 +47,6 @@ $Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -Second
 $Script:EmailAddress = $Addresses[0]
 $Script:ProxyAddresses = $Addresses[1]
 
-$Script:EmailAddress = $ProxyAddresses[0]
-
 # Ensure that this account does not already exist
 If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
 {
@@ -120,7 +118,7 @@ Enable the user's mailbox
 
 Write-Heading "Mailbox"
 
-Enable-UserMailbox -Identity $SAM -Alias $EmailAddress -Database "PARCMELPRIDB"
+Enable-UserMailbox -Identity $SAM -Alias $Mail -Database "PARCMELPRIDB" -ExchangeYear "2013"
 
 <#
 ----------

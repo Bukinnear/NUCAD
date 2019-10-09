@@ -146,25 +146,36 @@ function Import-ExchangeSnapin
         {  
             try
             {
-                Write-Space
                 add-pssnapin Microsoft.Exchange.Management.PowerShell.E2010 -ErrorAction Stop
+                return $true
             }
             catch
             {
-                if ($_.Exception -like "*Microsoft.Exchange.Management.PowerShell.E2010 because it is already added*") { }
+                if ($_.Exception -like "*Microsoft.Exchange.Management.PowerShell.E2010 because it is already added*") { return $true }
                 else
                 {
-                    Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Exchange Management module."            
+                    Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Exchange 2010 Management module."    
+                    return $false        
                 }
             }
         }
         "2013"
         {
-            Add-PSSnapin Microsoft.Exchange.Management.Powershell.SnapIn
+            try
+            {
+                Write-Space
+                Add-PSSnapin Microsoft.Exchange.Management.Powershell.SnapIn
+                return $true
+            }
+            catch
+            {
+                Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Exchange 2013 Management module."
+                return $false                    
+            }
         }
         Default 
         {
-            return $false
+            throw "Could not import exchange module - no year specified"
         }
     }
 }
@@ -1025,7 +1036,7 @@ function Enable-UserMailbox
         [string]
         $Identity,
 
-        # The user's email address
+        # The user's mail name (before the @ symbol)
         [Parameter(
             Mandatory=$true     
         )]
@@ -1037,13 +1048,28 @@ function Enable-UserMailbox
             Mandatory=$true     
         )]
         [String]
-        $Database
+        $Database, 
+
+        # The exchange year version
+        [Parameter(
+            Mandatory=$true     
+        )]
+        [String]
+        $ExchangeYear
     )
+
+    if (!(Import-ExchangeSnapin -ExchangeYear $ExchangeYear)) 
+    {
+        Write-Host "`r`nCould not enable mailbox"
+    }
 
     try 
     {
-        Enable-Mailbox -identity $Identity -alias $Alias -database $Database > $null
-        Write-Output "`r`n- Successfully enabled user mailbox."        
+        $MailboxResult = Enable-Mailbox -Identity $Identity -Alias $Alias -Database $Database -ErrorAction Stop
+        if ($MailboxResult)
+        {
+            Write-Host "`r`n- Successfully enabled user mailbox."
+        }
     }
     catch
     {
