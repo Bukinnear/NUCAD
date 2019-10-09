@@ -128,6 +128,47 @@ function Initialize-Module
     return $true
 }
 
+function Import-ExchangeSnapin 
+{
+    param (
+        # The version of Exchange that we will be importing
+        [Parameter(
+            Mandatory=$true
+        )]
+        [ValidateSet("2010", "2013")]
+        [string]
+        $ExchangeYear
+    )
+    
+    switch ($ExchangeYear)
+    {
+        "2010" 
+        {  
+            try
+            {
+                Write-Space
+                add-pssnapin Microsoft.Exchange.Management.PowerShell.E2010 -ErrorAction Stop
+            }
+            catch
+            {
+                if ($_.Exception -like "*Microsoft.Exchange.Management.PowerShell.E2010 because it is already added*") { }
+                else
+                {
+                    Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Exchange Management module."            
+                }
+            }
+        }
+        "2013"
+        {
+            Add-PSSnapin Microsoft.Exchange.Management.Powershell.SnapIn
+        }
+        Default 
+        {
+            return $false
+        }
+    }
+}
+
 # Writes an empty line to the console
 function Write-Space
 {
@@ -989,33 +1030,24 @@ function Enable-UserMailbox
             Mandatory=$true     
         )]
         [String]
-        $Alias
-    )
+        $Alias, 
 
-    try
-    {
-        Write-Space
-        add-pssnapin Microsoft.Exchange.Management.PowerShell.E2010 -ErrorAction Stop
-    }
-    catch
-    {
-        if ($_.Exception -like "*Microsoft.Exchange.Management.PowerShell.E2010 because it is already added*") { }
-        else
-        {
-            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Exchange Management module."
-            return $null
-        }
-    }
+        # The exchange database to use
+        [Parameter(
+            Mandatory=$true     
+        )]
+        [String]
+        $Database
+    )
 
     try 
     {
-        Enable-Mailbox -identity $Identity -alias $Alias > $null
-        Write-Space
-        Write-Output "- Successfully enabled user mailbox."
+        Enable-Mailbox -identity $Identity -alias $Alias -database $Database > $null
+        Write-Output "`r`n- Successfully enabled user mailbox."        
     }
     catch
     {
-        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not enable mailbox."
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not enable mailbox."        
     }
 }
 

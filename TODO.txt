@@ -1,10 +1,10 @@
 - Test folder creation functions
 - Double check error modes:
     - Set-FolderPermissions 
+    - Import-ExchangeSnapin
 
 - Create verification for Sam account name
 - Prompt to provide a different SAM/UPN if the name is taken
 
 - Add functionality to add users to groups
 
-- Allow the log name to be changed automatically

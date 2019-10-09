@@ -37,11 +37,11 @@ $Script:SAM = $FirstName + "." + $LastName
 
 # User logon name/User Principle Name. This will control which domain the user is created under.
 # LDAP Field: UserPrincipleName (User Logon Name).
-$Script:UPN = "$($FirstName).$($LastName)@Macdonald-Johnston.com.au"
+$Script:UPN = "$($FirstName).$($LastName)@peninsulaleisure.com.au"
 
 $Script:Mail = $FirstName + "." + $LastName
-$Script:PrimaryDomain = "BucherMunicipal.com.au"
-$Script:SecondaryDomains = @("Bucher.com.au", "JDMacdonald.com.au", "MacdonaldJohnston.com.au", "Macdonald-Johnston.com.au", "MJE.com.au")
+$Script:PrimaryDomain = "Peninsulaleisure.com.au"
+$Script:SecondaryDomains = @()
 
 $Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
 $Script:EmailAddress = $Addresses[0]
@@ -60,7 +60,7 @@ If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
 $Script:MirrorUser = Get-MirrorUser -UsernameFormat "Firstname Lastname = Firstname.Lastname"
 $Script:OU = Get-OU $MirrorUser
 
-$ConfirmUserCreation = Confirm-NewUserDetails `
+[bool]$ConfirmUserCreation = Confirm-NewAccountDetails `
     -Firstname $Firstname `
     -Lastname $Lastname `
     -JobTitle $JobTitle `
@@ -70,7 +70,7 @@ $ConfirmUserCreation = Confirm-NewUserDetails `
     -MirrorUser $MirrorUser
 
 # Confirm user creation
-if (!$ConfirmAccountCreation)
+if (!$ConfirmUserCreation)
 {
     Write-Heading "Cancelled user creation"
     return
@@ -114,37 +114,13 @@ Set-MirroredGroups -Identity $NewUser -MirrorUser $MirrorUser
 
 <#
 ----------
-Create the user's home drive
-----------
-#>
-
-Write-Heading "Creating Home Drive"
-
-$Script:UserFolderDirectory = "\\mjemelfs2\user$"
-$Script:Domain = "vicmje"
-
-$HomeDrive = New-UserFolder `
-    -SamAccountName $SAM `
-    -Domain $Domain `
-    -ParentFolderPath $UserFolderDirectory `
-    -FolderName $SAM
-
-if ($HomeDrive)
-{
-    Set-HomeDrive `
-    -Identity $SAM `
-    -HomeDrivePath $HomeDrive.$Fullname `
-    -DriveLetter 'H'    
-}
-<#
-----------
 Enable the user's mailbox
 ----------
 #>
 
 Write-Heading "Mailbox"
 
-Enable-UserMailbox -Identity $SAM -Alias $EmailAddress
+Enable-UserMailbox -Identity $SAM -Alias $EmailAddress -Database "PARCMELPRIDB"
 
 <#
 ----------
