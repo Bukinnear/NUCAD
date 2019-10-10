@@ -41,13 +41,11 @@ $Script:UPN = "$($FirstName).$($LastName)@Macdonald-Johnston.com.au"
 
 $Script:Mail = $FirstName + "." + $LastName
 $Script:PrimaryDomain = "BucherMunicipal.com.au"
-$Script:SecondaryDomains = @("Bucher.com.au", "JDMacdonald.com.au", "MacdonaldJohnston.com.au", "Macdonald-Johnston.com.au", "MJE.com.au")
+$Script:SecondaryDomains = @()#"Bucher.com.au", "JDMacdonald.com.au", "MacdonaldJohnston.com.au", "Macdonald-Johnston.com.au", "MJE.com.au")
 
 $Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
 $Script:EmailAddress = $Addresses[0]
 $Script:ProxyAddresses = $Addresses[1]
-
-$Script:EmailAddress = $ProxyAddresses[0]
 
 # Ensure that this account does not already exist
 If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
@@ -120,22 +118,12 @@ Create the user's home drive
 
 Write-Heading "Creating Home Drive"
 
-$Script:UserFolderDirectory = "\\mjemelfs2\user$"
-$Script:Domain = "vicmje"
-
-$HomeDrive = New-UserFolder `
+New-HomeDrive `
     -SamAccountName $SAM `
-    -Domain $Domain `
-    -ParentFolderPath $UserFolderDirectory `
-    -FolderName $SAM
+    -Domain "vicmje" `
+    -HomeDriveDirectory "\\mjemelfs2\user$" `
+    -FolderName $SAM -DriveLetter "H"
 
-if ($HomeDrive)
-{
-    Set-HomeDrive `
-    -Identity $SAM `
-    -HomeDrivePath $HomeDrive.$Fullname `
-    -DriveLetter 'H'    
-}
 <#
 ----------
 Enable the user's mailbox
@@ -144,7 +132,7 @@ Enable the user's mailbox
 
 Write-Heading "Mailbox"
 
-Enable-UserMailbox -Identity $SAM -Alias $EmailAddress
+Enable-UserMailbox -Identity $SAM -Alias $Mail -Database "01-USERDB" -ExchangeYear "2010"
 
 <#
 ----------

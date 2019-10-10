@@ -835,6 +835,66 @@ function New-UserFolder
     return $HomeDrive
 }
 
+function New-HomeDrive
+{
+    param (
+        # The user's Sam Account Name
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $SamAccountName,
+
+        # The domain the user is created under
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Domain,
+
+        # The path that your want the folder created under EXCLUDING the folder name
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $HomeDriveDirectory, 
+
+        # The name of the folder to be created
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $FolderName,
+        
+        # The drive letter to assign to the Home Drive.
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $DriveLetter
+    )
+
+    $HomeDrive = New-UserFolder `
+    -SamAccountName $SamAccountName `
+    -Domain $Domain `
+    -ParentFolderPath $HomeDriveDirectory `
+    -FolderName $FolderName
+
+    if ($HomeDrive)
+    {
+        Set-HomeDrive `
+        -Identity $SamAccountName `
+        -HomeDrivePath $HomeDrive.$Fullname `
+        -DriveLetter $DriveLetter
+    }
+    else 
+    {
+        Write-Space
+        Write-Warning "`r`nFailed to create user's Home Drive. Please check manually."
+    }
+    
+} 
+
 function Set-FolderPermissions
 {
     param (
