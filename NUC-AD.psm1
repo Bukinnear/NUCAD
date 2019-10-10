@@ -379,7 +379,14 @@ function Get-MirrorUser
         catch 
         {
             Write-Space
-            Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogString "Could not find any user with that username."
+            if (Get-Confirmation "Could not locate user account - would you like to search for an account?")
+            {
+                Search-UserAccounts
+            }
+            else 
+            {
+                Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogString "Could not find any user with that username."                
+            }
             continue
         }
     }
@@ -448,14 +455,24 @@ function Search-UserAccounts
     for (;;)
     {        
         $Search = Read-Host "Enter a name, or part of a name to search for. leave it blank to continue`r`n"
-
+    
         if ("" -eq $Search) { return }
         
-        $Results = Get-ADUser -Filter "name -like '*$($Search)*'" -Properties SamAccountName, Name, DisplayName, EmailAddress | select SamAccountName, Name, DisplayName, EmailAddress | Format-Table
-
-        Write-Host "`r`n----------"
-        foreach ($Item in $Results) { Write-Host $_ }
-        Write-Host "----------`r`n"
+        try 
+        {
+            $Results = @(Get-ADUser -Filter "name -like '*$($Search)*'" -Properties SamAccountName, Name, DisplayName, EmailAddress | select Name, DisplayName, SamAccountName, EmailAddress)
+        } 
+        catch 
+        { 
+            Write-Space 
+        }
+        
+        if ($Results)
+        {
+            Write-Host "`r`n----------"
+            $Results | Format-Table
+            Write-Host "----------`r`n"
+        }
     }
 }
 
