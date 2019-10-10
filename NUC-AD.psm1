@@ -373,7 +373,7 @@ function Get-MirrorUser
 
             if (Get-Confirmation "Is this the correct account?")
             {
-                break
+                return $User
             }            
         }
         catch 
@@ -384,7 +384,8 @@ function Get-MirrorUser
         }
     }
 
-    return $User
+    # Should never get here, but just in case
+    throw "No mirror user was found"
 }
 
 # Gets the OU of the provided user
@@ -438,6 +439,24 @@ function Get-NewAccount
     }
 
     return $null
+}
+
+function Search-UserAccounts 
+{
+    Write-Host "`r`n----------"
+
+    for (;;)
+    {        
+        $Search = Read-Host "Enter a name, or part of a name to search for. leave it blank to continue`r`n"
+
+        if ("" -eq $Search) { return }
+        
+        $Results = Get-ADUser -Filter "name -like '*$($Search)*'" -Properties SamAccountName, Name, DisplayName, EmailAddress | select SamAccountName, Name, DisplayName, EmailAddress | Format-Table
+
+        Write-Host "`r`n----------"
+        foreach ($Item in $Results) { Write-Host $_ }
+        Write-Host "----------`r`n"
+    }
 }
 
 # Optimises the given name by removing leading/trailing white space, illegal characters, and capitalising the first letter if required
