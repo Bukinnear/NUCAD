@@ -1,18 +1,17 @@
-Write-Output "Loading - please wait`r`n"
+Write-Host "Loading - please wait`r`n"
 $ErrorActionPreference = "Stop"
 
-# Path to new user creation module
-$Script:ScriptPath = split-path -parent $MyInvocation.MyCommand.Definition
+# Get the script's file path
+$Script:ScriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
-# For debugging purposes
-if (($ScriptPath -eq "") -or ($null -eq $ScriptPath))
+# Add this path to the modules search directory
+if ($env:PSModulePath -notlike "*$($Script:ScriptPath)*")
 {
-    $ScriptPath = "C:\Code\PS\Testing\New Users"
+    $env:PSModulePath += (";" + $ScriptPath)
 }
 
-# Import the new user creation module
-Import-Module -Name "$($ScriptPath)\NUC-AD" -Force
-if (!(Initialize-Module)) { return }
+Import-Module -Name "NUC-AD" -Force
+if (!(Initialize-Module)) { Write-Error "Could not import NUC-AD module" }
 
 #Write-Warning "It is not recommended to create service accounts with this tool."
 

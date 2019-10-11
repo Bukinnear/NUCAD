@@ -235,23 +235,72 @@ function Get-FullName
 
         if ($PromptForCapitalisation)
         {
-            $ShouldFixCapitalisation = Get-Confirmation "----------`r`nWould you like to fix/standardise the capitalisation of this name?`r`n(Choose yes if you are not sure)"    
-        }
-        else 
-        {
-            $ShouldFixCapitalisation = $null
+            if (Get-Confirmation "----------`r`nWould you like to fix/standardise the capitalisation of this name?`r`n(Choose yes if you are not sure)")
+            {
+                $Firstname = Get-CapitalisedName $Firstname
+                $Lastname = Get-CapitalisedName $Lastname                
+            }
         }
 
         # Clean the given names
-        $Firstname = Optimize-Name -Name $Firstname -FixCapitalisation $ShouldFixCapitalisation
-        $Lastname = Optimize-Name -Name $LastName -FixCapitalisation $ShouldFixCapitalisation
+        $FirstnameClean = Get-CleanedName -Name $Firstname
+        $LastnameClean = Get-CleanedName -Name $LastName
 
         # Confirm the name is correct
         If (Confirm-Name -FirstName $Firstname -LastName $Lastname)
         {
-            return @($Firstname, $Lastname)
+            return @{
+                $First = $Firstname
+                $Last = $Lastname
+                $FirstClean = $FirstnameClean
+                $LastClean = $LastnameClean
+            }
         }
     }
+}
+
+# Cleans the given name by removing leading/trailing white space, and illegal characters
+function Get-CleanedName
+{
+    param (
+        # Name to clean
+        [Parameter(
+            Mandatory=$true
+            )]
+        [string]
+        $Name
+    )
+    
+    # illegal characters
+    $CharList = "'", "`"", "/", "\",";", ":", "(", ")", "[", "]", "!", "@", "$", "%", "^", "&", "*", "``", "~", "."
+    
+    # Remove illegal characters
+    foreach ($Char in $CharList)
+    {
+        $Name = $Name.Replace($Char, "")
+    }
+
+    #Remove WhiteWrite-Spaces
+    $Name = $Name.Trim()
+    
+    return $Name
+}
+
+# Capitalises the first letter, if user approves
+function Get-CapitalisedName
+{
+    param (
+        # Name to capitalise
+        [Parameter(
+            Mandatory=$true
+            )]
+        [string]
+        $Name
+    )
+
+    $Name = (Get-Culture).TextInfo.ToTitleCase($Name.ToLower())
+
+    return $Name    
 }
 
 # Prompt the user to provide a job title/description for the new account
@@ -332,7 +381,10 @@ function Get-Addresses
             $ProxyAddresses += "smtp:$($MailName)@$($Domain)" 
         }
 
-        $ReturnValue = @($PrimaryAddress, $ProxyAddresses)
+        $ReturnValue = @{
+            PrimarySMTP = $PrimaryAddress
+            Proxy = $ProxyAddresses
+        }
 
         if (Confirm-PrimarySMTPAddress -PrimarySMTP $PrimaryAddress) 
         {
@@ -470,47 +522,10 @@ function Search-UserAccounts
         if ($Results)
         {
             Write-Host "`r`n----------"
-            $Results | Format-Table
+            $Results | Format-Table | Out-String | % {Write-Host $_}
             Write-Host "----------`r`n"
         }
     }
-}
-
-# Optimises the given name by removing leading/trailing white space, illegal characters, and capitalising the first letter if required
-function Optimize-Name
-{
-    param (
-        # Name to optimise
-        [Parameter(
-            Mandatory=$true,
-            Position=0)]
-        [string]
-        $Name,
-
-        # Whether to capitalise the name
-        [Parameter()]
-        [bool]
-        $FixCapitalisation = $null
-    )
-    
-    # illegal characters
-    $CharList = "'", "`"", "/", "\",";", ":", "(", ")", "[", "]", "!", "@", "$", "%", "^", "&", "*", "``", "~", "."
-    
-    # Remove illegal characters
-    foreach ($Char in $CharList)
-    {
-        $Name = $Name.Replace($Char, "")
-    }
-
-    #Remove WhiteWrite-Spaces
-    $Name = $Name.Trim()
-
-    if ($FixCapitalisation)
-    {
-        $Name = (Get-Culture).TextInfo.ToTitleCase($Name.ToLower())
-    }
-
-    return $Name
 }
 
 # Prompts the user to confirm the given first and last name. Returns true if they approve
@@ -693,7 +708,7 @@ function New-UserAccount
     }
     catch [Microsoft.ActiveDirectory.Management.ADPasswordComplexityException]
     {
-        Write-Warning "`r`nCould not assign password to new user."
+        Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogToFile $false -LogString "Could not assign password to account"        
 
         $NewUser = Get-NewAccount -SamAccountName $SamAccountName
         if (!$NewUser)
@@ -701,6 +716,9 @@ function New-UserAccount
             Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not find new account after assigning the password"
             return $null
         }
+
+        Write-Space
+        Write-Host "Please provide a new password"
         
         for (;;)
         {
@@ -884,7 +902,7 @@ function New-HomeDrive
     {
         Set-HomeDrive `
         -Identity $SamAccountName `
-        -HomeDrivePath $HomeDrive.$Fullname `
+        -HomeDrivePath $HomeDrive.Fullname `
         -DriveLetter $DriveLetter
     }
     else 
@@ -1199,7 +1217,7 @@ function Set-UserFolderPermissions
     )
 
     # Get the current permissions of the home drive folder
-    $ACL = Get-Acl $HomeDrivePath
+    $ACL = Get-Acl $FolderPath
 
     # The new NTFS permissions rule parameters 
     $RuleParameters = @(
@@ -1214,14 +1232,14 @@ function Set-UserFolderPermissions
         )
 
     # Add the rule to the current permissions list
-    $Rule = New-Object 
-        -TypeName System.Security.AccessControl.FileSystemAccessRule
+    $Rule = New-Object `
+        -TypeName System.Security.AccessControl.FileSystemAccessRule `
         -ArgumentList $RuleParameters
 
     $ACL.SetAccessRule($Rule) 
 
     # Set the NTFS permissions on the user's home folder to our new list
-    Set-Acl -Path $HomeDrivePath -AclObject $ACL
+    Set-Acl -Path $FolderPath -AclObject $ACL
     
 }
 
@@ -1253,7 +1271,8 @@ function Set-HomeDrive
     try
     {
         # Set home drive on the user's profile
-        Set-ADUser -SamAccountName $Identity -HomeDrive $DriveLetter -HomeDirectory $HomeDrivePath
+        Set-ADUser -Identity $Identity -HomeDrive $DriveLetter -HomeDirectory $HomeDrivePath -ErrorAction Stop
+        Write-Host "`r`n- Successfully set home drive"
     }
     catch
     {

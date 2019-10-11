@@ -1,18 +1,17 @@
-Write-Output "Loading - please wait`r`n"
+Write-Host "Loading - please wait`r`n"
 $ErrorActionPreference = "Stop"
 
-# Path to new user creation module
-$Script:ScriptPath = split-path -parent $MyInvocation.MyCommand.Definition
+# Get the script's file path
+$Script:ScriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
-# For debugging purposes
-if (($ScriptPath -eq "") -or ($null -eq $ScriptPath))
+# Add this path to the modules search directory
+if ($env:PSModulePath -notlike "*$($Script:ScriptPath)*")
 {
-    $ScriptPath = "C:\Code\PS\Testing\New Users"
+    $env:PSModulePath += (";" + $ScriptPath)
 }
 
-# Import the new user creation module
-Import-Module -Name "$($ScriptPath)\NUC-AD" -Force
-if (!(Initialize-Module)) { return }
+Import-Module -Name "NUC-AD" -Force
+if (!(Initialize-Module)) { Write-Error "Could not import NUC-AD module" }
 
 Write-Warning "It is not recommended to create service accounts with this tool."
 
@@ -24,32 +23,32 @@ Get new user details
 
 Write-Heading "Starting User Creation Process"
 
-$Fullname = Get-Fullname
-$Script:FirstName = $Fullname[0]
-$Script:LastName = $Fullname[1]
+$Script:Name = Get-Fullname
 $Script:JobTitle = Get-JobTitle
 $Script:PhoneNumber = Get-PhoneNumber
-$Script:Password = Get-Password
+$Script:Password = Get-Password -Password 'rises-zA7N!'
 
 # Pre-windows 2000 Logon name. This is normally what the user will log in with. 
 #LDAP Field: SamAccountName
-$Script:SAM = $FirstName + "." + $LastName
+$Script:SAM = $Name.FirstClean + "." + $Name.LastClean
 
 # User logon name/User Principle Name. This will control which domain the user is created under.
 # LDAP Field: UserPrincipleName (User Logon Name).
-$Script:UPN = "$($FirstName).$($LastName)@Macdonald-Johnston.com.au"
+$Script:UPN = "$($Name.FirstClean).$($Name.LastClean)@Macdonald-Johnston.com.au"
 
-$Script:Mail = $FirstName + "." + $LastName
+$Script:Mail = $Name.FirstClean + "." + $Name.LastClean
 $Script:PrimaryDomain = "BucherMunicipal.com.au"
 $Script:SecondaryDomains = @()#"Bucher.com.au", "JDMacdonald.com.au", "MacdonaldJohnston.com.au", "Macdonald-Johnston.com.au", "MJE.com.au")
 
-$Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
-$Script:EmailAddress = $Addresses[0]
-$Script:ProxyAddresses = $Addresses[1]
-
+$Addresses = Get-Addresses `
+    -MailName $Mail `
+    -PrimaryDomain $PrimaryDomain `
+    -SecondaryDomains $SecondaryDomains
+    
 # Ensure that this account does not already exist
 If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
 {
+    Write-Space
     Write-Warning "`r`nUser with SAM account of $($SAM) already exists!"
     Write-Heading "Cancelled user creation"
     return
@@ -58,17 +57,17 @@ If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
 $Script:MirrorUser = Get-MirrorUser -UsernameFormat "Firstname Lastname = Firstname.Lastname"
 $Script:OU = Get-OU $MirrorUser
 
-$ConfirmUserCreation = Confirm-NewUserDetails `
-    -Firstname $Firstname `
-    -Lastname $Lastname `
+$ConfirmUserCreation = Confirm-NewAccountDetails `
+    -Firstname $Name.First `
+    -Lastname $Name.Last `
     -JobTitle $JobTitle `
     -SamAccountName $SAM `
-    -EmailAddress $EmailAddress `
+    -EmailAddress $Addresses.PrimarySMTP `
     -Password $Password `
     -MirrorUser $MirrorUser
 
 # Confirm user creation
-if (!$ConfirmAccountCreation)
+if (!$ConfirmUserCreation)
 {
     Write-Heading "Cancelled user creation"
     return
@@ -83,8 +82,8 @@ Create the account
 Write-Heading "Beginning user creation"
 
 $Script:NewUser = New-UserAccount `
-    -Firstname $Firstname `
-    -Lastname $Lastname `
+    -Firstname $Name.FirstClean `
+    -Lastname $Name.LastClean `
     -SamAccountName $SAM `
     -UPN $UPN `
     -JobTitle $JobTitle `

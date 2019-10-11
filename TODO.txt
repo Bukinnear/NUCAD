@@ -1,3 +1,7 @@
+IMPORTANT:
+Update old scripts to use new Get-Fullname
+Update old scripts to use new Get-Addresses
+
 - Test folder creation functions
 - Double check error modes:
     - Set-FolderPermissions 
