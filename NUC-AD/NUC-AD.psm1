@@ -1272,12 +1272,34 @@ function Enable-UserMailbox
         if ($MailboxResult)
         {
             Write-Host "`r`n- Successfully enabled user mailbox."
-        }
+        }        
     }
     catch
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not enable mailbox."        
     }
+    finally
+    {
+        Remove-ExchangeSnapins
+    }   
+}
+
+function Remove-ExchangeSnapins 
+{
+    foreach ($Snapin in (Get-PSSnapin))
+    {
+        if ($Snapin.Name -like "*Exchange.Management*")
+        {
+            try 
+            {
+                Remove-PSSnapin $Snapin.Name                
+            }
+            catch 
+            {
+                Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogToFile $true -LogString "Could not remove Exchange Snapin `"$($Snapin.name)`""
+            }
+        }
+    }    
 }
     
 function Start-O365Sync 
