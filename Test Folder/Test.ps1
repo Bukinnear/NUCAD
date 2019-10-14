@@ -1,17 +1,9 @@
-$Test = @{
-    K1 = "Value1"
-    K2 = "Value2"
-    K3 = "Value3"
-}
-
-Wait-Debugger
-return
-
 Write-Host "Loading - please wait`r`n"
 $ErrorActionPreference = "Stop"
 
 # Get the script's file path
-$Script:ScriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$Testpath = Split-path -parent $MyInvocation.MyCommand.Definition
+$Script:ScriptPath = Split-Path -Parent $Testpath
 
 # Add this path to the modules search directory
 if ($env:PSModulePath -notlike "*$($Script:ScriptPath)*")
@@ -22,3 +14,24 @@ if ($env:PSModulePath -notlike "*$($Script:ScriptPath)*")
 Import-Module -Name "NUC-AD" -Force
 if (!(Initialize-Module)) { Write-Error "Could not import NUC-AD module" }
 
+$Name = "D'Abate"
+
+$TName = Get-CleanedName $Name
+
+Wait-Debugger
+
+return
+
+$Name = "D'Abate"
+
+# illegal characters
+$CharList = "`'", "`"", "/", "\",";", ":", "(", ")", "[", "]", "!", "@", "$", "%", "^", "&", "*", "``", "~", "."
+
+# Remove illegal characters
+foreach ($Char in $CharList)
+{
+    $Name = $Name.Replace($Char, "")
+}
+Wait-Debugger
+
+return

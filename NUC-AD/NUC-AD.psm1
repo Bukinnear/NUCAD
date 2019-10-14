@@ -250,10 +250,10 @@ function Get-FullName
         If (Confirm-Name -FirstName $Firstname -LastName $Lastname)
         {
             return @{
-                $First = $Firstname
-                $Last = $Lastname
-                $FirstClean = $FirstnameClean
-                $LastClean = $LastnameClean
+                First = $Firstname
+                Last = $Lastname
+                FirstClean = $FirstnameClean
+                LastClean = $LastnameClean
             }
         }
     }
@@ -272,7 +272,7 @@ function Get-CleanedName
     )
     
     # illegal characters
-    $CharList = "'", "`"", "/", "\",";", ":", "(", ")", "[", "]", "!", "@", "$", "%", "^", "&", "*", "``", "~", "."
+    $CharList = "`'", "`"", "’", "‘", "‛", "/", "\",";", ":", "(", ")", "[", "]", "!", "@", "$", "%", "^", "&", "*", "``", "~", ".", "‚"
     
     # Remove illegal characters
     foreach ($Char in $CharList)
@@ -280,7 +280,7 @@ function Get-CleanedName
         $Name = $Name.Replace($Char, "")
     }
 
-    #Remove WhiteWrite-Spaces
+    #Remove white spaces
     $Name = $Name.Trim()
     
     return $Name
@@ -1174,7 +1174,7 @@ function Enable-UserMailbox
 
     if (!(Import-ExchangeSnapin -ExchangeYear $ExchangeYear)) 
     {
-        Write-Host "`r`nCould not enable mailbox"
+        Write-Host "`r`nCould not load exchange snap-in"
     }
 
     try 
