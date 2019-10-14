@@ -1140,57 +1140,6 @@ function Set-LDAPMailNickName
     }
 }
 
-function Enable-UserMailbox
-{
-    param (
-        # The user the mailbox belongs to
-        [Parameter(
-            Mandatory=$true            
-        )]
-        [string]
-        $Identity,
-
-        # The user's mail name (before the @ symbol)
-        [Parameter(
-            Mandatory=$true     
-        )]
-        [String]
-        $Alias, 
-
-        # The exchange database to use
-        [Parameter(
-            Mandatory=$true     
-        )]
-        [String]
-        $Database, 
-
-        # The exchange year version
-        [Parameter(
-            Mandatory=$true     
-        )]
-        [String]
-        $ExchangeYear
-    )
-
-    if (!(Import-ExchangeSnapin -ExchangeYear $ExchangeYear)) 
-    {
-        Write-Host "`r`nCould not load exchange snap-in"
-    }
-
-    try 
-    {
-        $MailboxResult = Enable-Mailbox -Identity $Identity -Alias $Alias -Database $Database -ErrorAction Stop
-        if ($MailboxResult)
-        {
-            Write-Host "`r`n- Successfully enabled user mailbox."
-        }
-    }
-    catch
-    {
-        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not enable mailbox."        
-    }
-}
-
 function Set-UserFolderPermissions 
 {
     param (
@@ -1278,6 +1227,57 @@ function Set-HomeDrive
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set the user profile's home drive"
     }    
+}
+
+function Enable-UserMailbox
+{
+    param (
+        # The user the mailbox belongs to
+        [Parameter(
+            Mandatory=$true            
+        )]
+        [string]
+        $Identity,
+
+        # The user's mail name (before the @ symbol)
+        [Parameter(
+            Mandatory=$true     
+        )]
+        [String]
+        $Alias, 
+
+        # The exchange database to use
+        [Parameter(
+            Mandatory=$true     
+        )]
+        [String]
+        $Database, 
+
+        # The exchange year version
+        [Parameter(
+            Mandatory=$true     
+        )]
+        [String]
+        $ExchangeYear
+    )
+
+    if (!(Import-ExchangeSnapin -ExchangeYear $ExchangeYear)) 
+    {
+        Write-Host "`r`nCould not load exchange snap-in"
+    }
+
+    try 
+    {
+        $MailboxResult = Enable-Mailbox -Identity $Identity -Alias $Alias -Database $Database -ErrorAction Stop
+        if ($MailboxResult)
+        {
+            Write-Host "`r`n- Successfully enabled user mailbox."
+        }
+    }
+    catch
+    {
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not enable mailbox."        
+    }
 }
     
 function Start-O365Sync 

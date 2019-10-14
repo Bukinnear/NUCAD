@@ -1,6 +1,7 @@
-IMPORTANT:
-Update old scripts to use new Get-Fullname
-Update old scripts to use new Get-Addresses
+
+Debug exchange snapin import (Remove it when finished?)
+
+Debug display names in Exchange (Eg. O'Connor becomes OConnor)
 
 - Test folder creation functions
 - Double check error modes:
