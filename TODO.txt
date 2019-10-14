@@ -1,15 +1,19 @@
+---------
+High Priority
+---------
+- Debug display names in Exchange (Eg. O'Connor becomes OConnor)
 
-Debug exchange snapin import (Remove it when finished?)
+---------
+Medium Priority
+---------
+- Add functionality to add users to groups
+- Create verification for Sam account name/UPN
+    - Prompt to provide a different SAM/UPN if the name is taken
 
-Debug display names in Exchange (Eg. O'Connor becomes OConnor)
-
+---------
+Lower Priority
+---------
 - Test folder creation functions
 - Double check error modes:
     - Set-FolderPermissions 
     - Import-ExchangeSnapin
-
-- Create verification for Sam account name
-- Prompt to provide a different SAM/UPN if the name is taken
-
-- Add functionality to add users to groups
-
