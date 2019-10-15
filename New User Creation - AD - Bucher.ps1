@@ -40,7 +40,7 @@ $Script:Mail = $Name.FirstClean + "." + $Name.LastClean
 $Script:PrimaryDomain = "BucherMunicipal.com.au"
 $Script:SecondaryDomains = @()#"Bucher.com.au", "JDMacdonald.com.au", "MacdonaldJohnston.com.au", "Macdonald-Johnston.com.au", "MJE.com.au")
 
-$Addresses = Get-Addresses `
+$Script:Addresses = Get-Addresses `
     -MailName $Mail `
     -PrimaryDomain $PrimaryDomain `
     -SecondaryDomains $SecondaryDomains
@@ -82,9 +82,10 @@ Create the account
 Write-Heading "Beginning user creation"
 
 $Script:NewUser = New-UserAccount `
-    -Firstname $Name.FirstClean `
-    -Lastname $Name.LastClean `
+    -Firstname $Name.First `
+    -Lastname $Name.Last `
     -SamAccountName $SAM `
+    -EmailAddress $Addresses.PrimarySMTP `
     -UPN $UPN `
     -JobTitle $JobTitle `
     -PhoneNumber $PhoneNumber `
@@ -131,7 +132,7 @@ Enable the user's mailbox
 
 Write-Heading "Mailbox"
 
-Enable-UserMailbox -Identity $SAM -Alias $Mail -Database "01-USERDB" -ExchangeYear "2010"
+Enable-UserMailbox -UserPrincipalName $UPN -Alias $Mail -Database "01-USERDB" -ExchangeYear "2010"
 
 <#
 ----------

@@ -666,6 +666,13 @@ function New-UserAccount
         [string]
         $UPN,
 
+        # Email address
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $EmailAddress,
+
         # Job title/account description (Optional)
         [Parameter()]
         [string]
@@ -699,7 +706,22 @@ function New-UserAccount
     )
     try 
     {
-        New-ADUser -GivenName $Firstname -Surname $Lastname -Name "$($Firstname) $($Lastname)" -DisplayName "$($Firstname) $($Lastname)" -SamAccountName $SamAccountName -UserPrincipalName $UPN -Description $JobTitle -Title $JobTitle -OfficePhone $PhoneNumber -Department $MirrorUser.Department -Path $OU -Enabled $True -AccountPassword (ConvertTo-SecureString $Password -AsPlainText -force) -ErrorAction Stop
+        New-ADUser `
+            -GivenName $Firstname `
+            -Surname $Lastname `
+            -Name "$($Firstname) $($Lastname)" `
+            -DisplayName "$($Firstname) $($Lastname)" `
+            -SamAccountName $SamAccountName `
+            -UserPrincipalName $UPN `
+            -EmailAddress $EmailAddress.ToString() `
+            -Description $JobTitle `
+            -Title $JobTitle `
+            -OfficePhone $PhoneNumber `
+            -Department $MirrorUser.Department `
+            -Path $OU `
+            -Enabled $True `
+            -AccountPassword (ConvertTo-SecureString $Password -AsPlainText -force) `
+            -ErrorAction Stop
     }
     catch [UnauthorizedAccessException]
     {
@@ -1232,12 +1254,12 @@ function Set-HomeDrive
 function Enable-UserMailbox
 {
     param (
-        # The user the mailbox belongs to
+        # The UPN of the user the mailbox belongs to
         [Parameter(
             Mandatory=$true            
         )]
         [string]
-        $Identity,
+        $UserPrincipalName,
 
         # The user's mail name (before the @ symbol)
         [Parameter(

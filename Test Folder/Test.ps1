@@ -13,25 +13,3 @@ if ($env:PSModulePath -notlike "*$($Script:ScriptPath)*")
 
 Import-Module -Name "NUC-AD" -Force
 if (!(Initialize-Module)) { Write-Error "Could not import NUC-AD module" }
-
-$Name = "D'Abate"
-
-$TName = Get-CleanedName $Name
-
-Wait-Debugger
-
-return
-
-$Name = "D'Abate"
-
-# illegal characters
-$CharList = "`'", "`"", "/", "\",";", ":", "(", ")", "[", "]", "!", "@", "$", "%", "^", "&", "*", "``", "~", "."
-
-# Remove illegal characters
-foreach ($Char in $CharList)
-{
-    $Name = $Name.Replace($Char, "")
-}
-Wait-Debugger
-
-return
