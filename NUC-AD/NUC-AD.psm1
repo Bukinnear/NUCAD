@@ -1,5 +1,6 @@
 $LogPath = 'C:\temp\UserCreationLogs\UserCreationADLog.txt'
 $ErrorsFound = $false
+# Import-Module -Name "C:\Code\PS\Testing\New Users\NUC-AD\NUC-AD" -Force
 
 Add-Type -TypeDefinition @"
    public enum LogTypes
@@ -10,6 +11,22 @@ Add-Type -TypeDefinition @"
    }
 "@
 
+<#
+.SYNOPSIS
+    Gets a true/false response from the user
+.DESCRIPTION
+    Writes the provided text to console, and expects the user to provide a yes/no response. Returns 1 or 0 for true and false, respectively
+.EXAMPLE
+    PS C:\> Get-Confirmation "Do you want to continue?"
+    Send the text "Do you want to continue?" to console and prompts the user to provide a yes/no response. Returns 1 or 0 (true or false)
+.PARAMETER Message
+    The text to write out/prompt the user with
+.INPUTS
+    String prompt to write to console as a prompt
+.OUTPUTS
+    Returns 1 or 0 for true and false, respectively
+.NOTES    
+#>
 function Get-Confirmation
 {
     param(
@@ -48,6 +65,34 @@ function Get-Confirmation
     }
 }
 
+<#
+.SYNOPSIS
+    Writes out the details of the provided error. Can be directed to console, or console and file.
+.DESCRIPTION
+    Writes out the provided error provided in CaughtError. LogType can be specified as Error, Warning, or Debug. 
+    LogString will provide optional, contextual infomation.
+    The log file will be directed to C:\temp\UserCreationLogs\UserCreationADLog.txt
+    Does not write to file by default.
+.EXAMPLE
+    PS C:\> Try {
+        ...
+    }
+    catch
+    {
+        Write-NewestErrorMessage -LogType Error -CaughtError $_ -LogToFile $True -LogString "This command must be run as administrator."
+    }
+    
+    Best used in a try/catch loop (for easy access to the most recent error). This will display error text, the category, and the text provided in LogString.
+    The same information will additionally be written to file.
+.PARAMETER LogType
+    The severity of the information being written. Valid options are Error, Warning, and Debug
+.PARAMETER CaughtError
+    The error you want to write the details of. Can optionally be omitted to provide only infomation provided by LogString.
+.PARAMETER LogToFile
+    Whether or not this error should be written to file. Accepts a boolean value
+.PARAMETER LogString
+    The optional, contextual message to provide alongside the error details. Not required, but strongly recommended.
+#>
 function Write-NewestErrorMessage
 {
     param(
@@ -101,7 +146,18 @@ function Write-NewestErrorMessage
     }
 }
 
-# Needs to be run before anything else is called. Returns true if successfull, and false if failed.
+# 
+<#
+.SYNOPSIS
+    Needs to be run before anything else is called. Returns true if successful, and false if failed.
+.DESCRIPTION
+    Long description
+.EXAMPLE
+    PS C:\> if (!Initialize-Module) {
+        # Stop the script
+    }
+    If the initialization fails, provides the opportunity to abort any future actions
+#>
 function Initialize-Module
 {
     # Import AD Module
@@ -128,6 +184,19 @@ function Initialize-Module
     return $true
 }
 
+<#
+.SYNOPSIS
+    Imports the Exchange Server Management Snapin corresponding to the year provided in $ExchangeYear. Accepts 2010, or 2013
+.DESCRIPTION
+    Imports the Exchange Server Management Snapin corresponding to the year provided in $ExchangeYear. Accepts 2010, or 2013
+.EXAMPLE
+    PS C:\> Import-ExchangeSnapin "2010"
+    Imports the 2010 Exchange Management Snapin
+.INPUTS
+    String value contining the year version of the exchange snapin to import
+.PARAMETER ExchangeYear
+    Accepts "2010", or "2013"
+#>
 function Import-ExchangeSnapin 
 {
     param (
@@ -180,12 +249,39 @@ function Import-ExchangeSnapin
     }
 }
 
-# Writes an empty line to the console
+<#
+.SYNOPSIS
+    Writes a new line to console
+.DESCRIPTION
+    Writes a new line to console. Used to easily space out output.
+.EXAMPLE
+    PS C:\> Write-Space
+
+    PS C:\>
+    Writes a new line to console
+    
+#>
 function Write-Space
 {
     Write-Host ""
 }
 
+<#
+.SYNOPSIS
+    Writes out the provided text as a heading banner
+.DESCRIPTION
+    Writes out the provided text as heading banner with extra lines, and formatted line breaks before and after
+.EXAMPLE
+    C:\> Write-Heading "Example"
+
+    ----------
+    Example
+    ----------
+
+    C:\>
+.INPUTS
+    Text to display as a heading
+#>
 function Write-Heading
 {
     param (
@@ -860,19 +956,19 @@ function New-UserFolder
         $FolderName = $SamAccountName
     )
 
-    if (!($HomeDrive = New-Directory -ParentFolderPath $ParentFolderPath -FolderName $FolderName))
+    if (!($NewDirectory = New-Directory -ParentFolderPath $ParentFolderPath -FolderName $FolderName))
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not create user's folder."
         return $null        
     }
 
-    if (!(Set-FolderPermissions -SamAccountName $SAMAccountName -Domain $Domain -Path $HomeDrive.FullName))
+    if (!(Set-FolderPermissions -SamAccountName $SAMAccountName -Domain $Domain -Path $NewDirectory.FullName))
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set permissions on the users's folder."
         return $null
     }
 
-    return $HomeDrive
+    return $NewDirectory
 }
 
 function New-HomeDrive
@@ -1259,7 +1355,7 @@ function Enable-UserMailbox
             Mandatory=$true            
         )]
         [string]
-        $UserPrincipalName,
+        $Identity,
 
         # The user's mail name (before the @ symbol)
         [Parameter(

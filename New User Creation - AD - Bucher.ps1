@@ -132,7 +132,7 @@ Enable the user's mailbox
 
 Write-Heading "Mailbox"
 
-Enable-UserMailbox -UserPrincipalName $UPN -Alias $Mail -Database "01-USERDB" -ExchangeYear "2010"
+Enable-UserMailbox -Identity $SAM -Alias $Mail -Database "01-USERDB" -ExchangeYear "2010"
 
 <#
 ----------

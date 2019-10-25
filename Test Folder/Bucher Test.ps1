@@ -27,7 +27,7 @@ $Script:Mail = $Name.FirstClean + "." + $Name.LastClean
 $Script:Addresses = Get-Addresses `
     -MailName $Mail `
     -PrimaryDomain "BucherMunicipal.com.au" `
-    -SecondaryDomains @()
+    -SecondaryDomains @("Bucher.com.au", "JDMacdonald.com.au", "MacdonaldJohnston.com.au", "Macdonald-Johnston.com.au", "MJE.com.au")
 $Script:MirrorUser = Get-ADUser "jctest" -Properties *
 $Script:OU = Get-OU $MirrorUser
 
@@ -39,31 +39,22 @@ If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
     return
 }
 
-New-ADUser `
-    -GivenName $Name.First `
-    -Surname $Name.Last `
-    -Name "$($Name.First) $($Name.Last)" `
-    -DisplayName "$($Name.First) $($Name.Last)" `
-    -SamAccountName $SAM `
-    -UserPrincipalName $UPN `
-    -EmailAddress $Addresses.PrimarySMTP `
-    -Description $JobTitle `
-    -Title $JobTitle `
-    -OfficePhone $PhoneNumber `
-    -Department $MirrorUser.Department `
-    -Path $OU `
-    -Enabled $True `
-    -AccountPassword (ConvertTo-SecureString $Password -AsPlainText -force) `
-    -ErrorAction Stop
-
 $Script:NewUser = New-UserAccount `
-    -Firstname $FirstName `
-    -Lastname $LastName `
+    -Firstname $Name.First `
+    -Lastname $Name.Last `
     -SamAccountName $SAM `
-    -EmailAddress $Addresses.PrimarySMTP `
     -UPN $UPN `
+    -EmailAddress $Addresses.PrimarySMTP `
     -JobTitle $JobTitle `
     -PhoneNumber $PhoneNumber `
     -MirrorUser $MirrorUser `
     -OU $OU `
     -Password $Password
+
+Set-MirroredProperties -Identity $NewUser -MirrorUser $MirrorUser
+Set-MirroredGroups -Identity $NewUser -MirrorUser $MirrorUser
+set-ldapmail -Identity $NewUser -PrimarySMTPAddress $Addresses.PrimarySMTP
+
+return
+
+Enable-UserMailbox -Identity "Test.McAccount" -Alias "Test.McAccount" -Database "01-USERDB" -ExchangeYear "2010"
