@@ -346,10 +346,10 @@ function Get-FullName
         If (Confirm-Name -FirstName $Firstname -LastName $Lastname)
         {
             return @{
-                First = $Firstname
-                Last = $Lastname
-                FirstClean = $FirstnameClean
-                LastClean = $LastnameClean
+                Firstname = $Firstname
+                Lastname = $Lastname
+                FirstnameClean = $FirstnameClean
+                LastnameClean = $LastnameClean
             }
         }
     }
@@ -1347,33 +1347,49 @@ function Set-HomeDrive
     }    
 }
 
+<#
+.SYNOPSIS
+    Creates/Enables an existing user's mailbox
+.DESCRIPTION
+    Creates/enables an existing user's mailbox.
+.EXAMPLE
+    PS C:\> 
+.PARAMETER Identity
+The identity of the user whose' mailbox should be enabled.
+.PARAMETER Alias
+The alias of the user (Usually the name before the @ symbol in their address).
+.PARAMETER Database
+The database the user is to be enabled on.
+.PARAMETER ExchangeYear
+The year version of the exchange. Current valid options are "2010" or "2013"
+#>
 function Enable-UserMailbox
 {
     param (
         # The UPN of the user the mailbox belongs to
         [Parameter(
-            Mandatory=$true            
+            Mandatory=$true
         )]
         [string]
         $Identity,
 
         # The user's mail name (before the @ symbol)
         [Parameter(
-            Mandatory=$true     
+            Mandatory=$true
         )]
         [String]
         $Alias, 
 
         # The exchange database to use
         [Parameter(
-            Mandatory=$true     
+            Mandatory=$true
         )]
         [String]
         $Database, 
 
         # The exchange year version
         [Parameter(
-            Mandatory=$true     
+            Mandatory=$true
         )]
         [String]
         $ExchangeYear

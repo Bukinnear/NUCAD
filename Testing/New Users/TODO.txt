@@ -1,4 +1,9 @@
 ---------
+Current 
+---------
+- Debug display names in Exchange (Eg. O'Connor becomes OConnor)
+
+---------
 High Priority
 ---------
 - Debug display names in Exchange (Eg. O'Connor becomes OConnor)
@@ -16,7 +21,7 @@ Medium Priority
 ---------
 Lower Priority
 ---------
-- Test folder creation functions
+- Documentation
 - Double check error modes:
     - Set-FolderPermissions 
     - Import-ExchangeSnapin

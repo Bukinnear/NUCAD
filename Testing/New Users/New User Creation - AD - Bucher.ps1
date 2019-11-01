@@ -30,13 +30,13 @@ $Script:Password = Get-Password -Password 'rises-zA7N!'
 
 # Pre-windows 2000 Logon name. This is normally what the user will log in with. 
 #LDAP Field: SamAccountName
-$Script:SAM = $Name.FirstClean + "." + $Name.LastClean
+$Script:SAM = $Name.FirstnameClean + "." + $Name.LastnameClean
 
 # User logon name/User Principle Name. This will control which domain the user is created under.
 # LDAP Field: UserPrincipleName (User Logon Name).
-$Script:UPN = "$($Name.FirstClean).$($Name.LastClean)@Macdonald-Johnston.com.au"
+$Script:UPN = "$($Name.FirstnameClean).$($Name.LastnameClean)@Macdonald-Johnston.com.au"
 
-$Script:Mail = $Name.FirstClean + "." + $Name.LastClean
+$Script:Mail = $Name.FirstnameClean + "." + $Name.LastnameClean
 $Script:PrimaryDomain = "BucherMunicipal.com.au"
 $Script:SecondaryDomains = @()#"Bucher.com.au", "JDMacdonald.com.au", "MacdonaldJohnston.com.au", "Macdonald-Johnston.com.au", "MJE.com.au")
 
@@ -58,8 +58,8 @@ $Script:MirrorUser = Get-MirrorUser -UsernameFormat "Firstname Lastname = Firstn
 $Script:OU = Get-OU $MirrorUser
 
 $ConfirmUserCreation = Confirm-NewAccountDetails `
-    -Firstname $Name.First `
-    -Lastname $Name.Last `
+    -Firstname $Name.Firstname `
+    -Lastname $Name.Lastname `
     -JobTitle $JobTitle `
     -SamAccountName $SAM `
     -EmailAddress $Addresses.PrimarySMTP `
@@ -82,8 +82,8 @@ Create the account
 Write-Heading "Beginning user creation"
 
 $Script:NewUser = New-UserAccount `
-    -Firstname $Name.First `
-    -Lastname $Name.Last `
+    -Firstname $Name.Firstname `
+    -Lastname $Name.Lastname `
     -SamAccountName $SAM `
     -EmailAddress $Addresses.PrimarySMTP `
     -UPN $UPN `
@@ -132,7 +132,11 @@ Enable the user's mailbox
 
 Write-Heading "Mailbox"
 
-Enable-UserMailbox -Identity $SAM -Alias $Mail -Database "01-USERDB" -ExchangeYear "2010"
+Enable-UserMailbox `
+    -Identity $SAM `
+    -Alias $Mail `
+    -Database "01-USERDB" `
+    -ExchangeYear "2010"
 
 <#
 ----------
