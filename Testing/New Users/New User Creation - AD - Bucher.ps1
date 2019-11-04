@@ -38,7 +38,7 @@ $Script:UPN = "$($Name.FirstnameClean).$($Name.LastnameClean)@Macdonald-Johnston
 
 $Script:Mail = $Name.FirstnameClean + "." + $Name.LastnameClean
 $Script:PrimaryDomain = "BucherMunicipal.com.au"
-$Script:SecondaryDomains = @()#"Bucher.com.au", "JDMacdonald.com.au", "MacdonaldJohnston.com.au", "Macdonald-Johnston.com.au", "MJE.com.au")
+$Script:SecondaryDomains = @() # "Bucher.com.au", "JDMacdonald.com.au", "MacdonaldJohnston.com.au", "Macdonald-Johnston.com.au", "MJE.com.au")
 
 $Script:Addresses = Get-Addresses `
     -MailName $Mail `
@@ -133,6 +133,7 @@ Enable the user's mailbox
 Write-Heading "Mailbox"
 
 Enable-UserMailbox `
+    @Name `
     -Identity $SAM `
     -Alias $Mail `
     -Database "01-USERDB" `

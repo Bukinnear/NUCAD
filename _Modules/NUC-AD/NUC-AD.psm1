@@ -1351,45 +1351,127 @@ function Set-HomeDrive
 .SYNOPSIS
     Creates/Enables an existing user's mailbox
 .DESCRIPTION
-    Creates/enables an existing user's mailbox.
+    Creates/enables an existing user's mailbox. 
+    User name paramaters can optionally be passed in to avoid Exchange using dirty name values to create the user's address
 .EXAMPLE
-    PS C:\> 
+    PS C:\> Enable-UserMailbox `
+        -Firstname "Test" `
+        -Lastname "Mc'Account" `
+        -FirstnameClean "Test" `
+        -LastnameClean "McAccount" `
+        -Alias "Test.McAccount" `
+        -Database "YOUREXCHANGEDATABASE" `
+        -ExchangeYear "2010"
+
+    Note: The user's name parameters are the same as the output of Get-Fullname, and can be passed via splatting. 
+    Eg.
+
+    PS C:\> $Name = Get-Fullname
+    PS C:\> Enable-UserMailbox `
+        @Name `
+        -Alias "Test.McAccount" `
+        -Database "YOUREXCHANGEDATABASE" `
+        -ExchangeYear "2010"
+
 .PARAMETER Identity
-The identity of the user whose' mailbox should be enabled.
+    The identity of the user whose' mailbox should be enabled.
+.PARAMETER Firstname
+    Raw first name of the user. This can be a raw form of the user's name for display purposes. The user's name will be set to this at the end of this function.
+.PARAMETER Lastname
+    Raw last name of the user. This can be a raw form of the user's name for display purposes. The user's name will be set to this at the end of this function.
+.PARAMETER FirstnameClean
+    Optional. Cleaned first name - this may be used by exchange to set up the user's email address, so it should be free of any illegal characters/symbols.
+.PARAMETER LastnameClean
+    Optional. Cleaned last name - this may be used by exchange to set up the user's email address, so it should be free of any illegal characters/symbols.
 .PARAMETER Alias
-The alias of the user (Usually the name before the @ symbol in their address).
+    The alias of the user (Usually the name before the @ symbol in their address).
 .PARAMETER Database
-The database the user is to be enabled on.
+    The database the user is to be enabled on.
 .PARAMETER ExchangeYear
-The year version of the exchange. Current valid options are "2010" or "2013"
+    The year version of the exchange. Current valid options are "2010" or "2013"
 #>
 function Enable-UserMailbox
 {
+    # Default parameter set to use
+    [CmdletBinding(DefaultParametersetName="NoName")]
     param (
         # The UPN of the user the mailbox belongs to
         [Parameter(
-            Mandatory=$true
+            Mandatory=$true,
+            ParameterSetName="Name"
+        )]
+        [Parameter(
+            Mandatory=$true,
+            ParameterSetName="NoName",
+            Position=0
         )]
         [string]
         $Identity,
 
+        # Raw first name of the user (what the user's name/display name will be when finished)
+        [Parameter(
+            Mandatory=$true,
+            ParameterSetName="Name"
+        )]
+        [string]
+        $Firstname,
+
+        # Raw last name of the user (what the user's name/display name will be when finished)
+        [Parameter(
+            Mandatory=$true,
+            ParameterSetName="Name"
+        )]
+        [string]
+        $Lastname,
+
+        # Clean first name of the user (illegal characters removed) - used while setting up the user's mailbox/email address
+        [Parameter(
+            Mandatory=$true,
+            ParameterSetName="Name"
+        )]
+        [string]
+        $FirstnameClean,
+
+        # Clean last name of the user (illegal characters removed) - used while setting up the user's mailbox/email address
+        [Parameter(
+            Mandatory=$true,
+            ParameterSetName="Name"
+        )]
+        [string]
+        $LastnameClean,
+
         # The user's mail name (before the @ symbol)
         [Parameter(
-            Mandatory=$true
+            Mandatory=$true,
+            ParameterSetName="Name"
+        )]
+        [Parameter(
+            Mandatory=$true,
+            ParameterSetName="NoName"
         )]
         [String]
         $Alias, 
 
         # The exchange database to use
         [Parameter(
-            Mandatory=$true
+            Mandatory=$true,
+            ParameterSetName="Name"
+        )]
+        [Parameter(
+            Mandatory=$true,
+            ParameterSetName="NoName"
         )]
         [String]
         $Database, 
 
         # The exchange year version
         [Parameter(
-            Mandatory=$true
+            Mandatory=$true,
+            ParameterSetName="Name"
+        )]
+        [Parameter(
+            Mandatory=$true,
+            ParameterSetName="NoName"
         )]
         [String]
         $ExchangeYear
