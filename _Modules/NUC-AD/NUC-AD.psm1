@@ -1,6 +1,6 @@
 $LogPath = 'C:\temp\UserCreationLogs\UserCreationADLog.txt'
 $ErrorsFound = $false
-# Import-Module -Name "C:\Code\PS\Testing\New Users\NUC-AD\NUC-AD" -Force
+# Import-Module -Name "C:\Code\Powershell\_Modules\NUC-AD" -Force
 
 Add-Type -TypeDefinition @"
    public enum LogTypes
@@ -1352,27 +1352,17 @@ function Set-HomeDrive
     Creates/Enables an existing user's mailbox
 .DESCRIPTION
     Creates/enables an existing user's mailbox. 
-    User name paramaters can optionally be passed in to avoid Exchange using dirty name values to create the user's address
+    User name paramaters can optionally be passed in to avoid Exchange using dirty name values to create the user's addresses
 .EXAMPLE
-    PS C:\> Enable-UserMailbox `
-        -Firstname "Test" `
-        -Lastname "Mc'Account" `
-        -FirstnameClean "Test" `
-        -LastnameClean "McAccount" `
-        -Alias "Test.McAccount" `
-        -Database "YOUREXCHANGEDATABASE" `
-        -ExchangeYear "2010"
+    PS C:\> Enable-UserMailbox -Firstname "Test" -Lastname "Mc'Account" -FirstnameClean "Test" -LastnameClean "McAccount" -Alias "Test.McAccount" -Database "YOUREXCHANGEDATABASE" -ExchangeYear "2010"
 
-    Note: The user's name parameters are the same as the output of Get-Fullname, and can be passed via splatting. 
+    Note: The user's name parameters are the same as the output of Get-Fullname, and can be passed via splatting for convenience. 
     Eg.
 
     PS C:\> $Name = Get-Fullname
-    PS C:\> Enable-UserMailbox `
-        @Name `
-        -Alias "Test.McAccount" `
-        -Database "YOUREXCHANGEDATABASE" `
-        -ExchangeYear "2010"
-
+    PS C:\> Enable-UserMailbox @Name -Alias "Test.McAccount" -Database "YOUREXCHANGEDATABASE" -ExchangeYear "2010"
+.INPUTS
+    String
 .PARAMETER Identity
     The identity of the user whose' mailbox should be enabled.
 .PARAMETER Firstname
@@ -1384,7 +1374,7 @@ function Set-HomeDrive
 .PARAMETER LastnameClean
     Optional. Cleaned last name - this may be used by exchange to set up the user's email address, so it should be free of any illegal characters/symbols.
 .PARAMETER Alias
-    The alias of the user (Usually the name before the @ symbol in their address).
+    The alias of the user (The name before the @ symbol in their address).
 .PARAMETER Database
     The database the user is to be enabled on.
 .PARAMETER ExchangeYear
@@ -1477,6 +1467,20 @@ function Enable-UserMailbox
         $ExchangeYear
     )
 
+    [bool] $SetName = $PSCmdlet.ParameterSetName -eq "Name"
+
+    if ($SetName)
+    {
+        try 
+        {
+            Set-ADUser -Identity $Identity -GivenName $FirstnameClean -Surname $LastnameClean -DisplayName "$($FirstnameClean) $($LastnameClean)"
+        }
+        catch 
+        {            
+            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set user's name before enabling mailbox.`r`nPlease double check the proxy addresses."
+        }
+    }
+
     if (!(Import-ExchangeSnapin -ExchangeYear $ExchangeYear)) 
     {
         Write-Host "`r`nCould not load exchange snap-in"
@@ -1497,7 +1501,19 @@ function Enable-UserMailbox
     finally
     {
         Remove-ExchangeSnapins
-    }   
+    }
+
+    if ($SetName)
+    {
+        try 
+        {
+            Set-ADUser -Identity $Identity -GivenName $Firstname -Surname $Lastname -DisplayName "$($Firstname) $($Lastname)"
+        }
+        catch 
+        {            
+            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set user's name back after enabling mailbox.`r`nPlease double check user's name."
+        }
+    }
 }
 
 function Remove-ExchangeSnapins 
