@@ -1,27 +1,31 @@
 ---------
 Current 
 ---------
-- Debug display names in Exchange (Eg. O'Connor becomes OConnor)
+
 
 ---------
 High Priority
 ---------
-- Debug display names in Exchange (Eg. O'Connor becomes OConnor)
 
 ---------
 Medium Priority
 ---------
+- Documentation
 - Create O365 mailboxes (ATC)
 - Add functionality to add users to groups
+
+---------
+Lower Priority
+---------
+- Double check error modes:
+    - Set-FolderPermissions 
+    - Import-ExchangeSnapin
 - Create verification for Sam account name/UPN
     - Prompt to provide a different SAM/UPN if the name is taken
 - Provide parameter validation for functions (Eg. ValidateNotNullOrEmpty)
 - Research opening scripts as admin (for desktop shortcuts)
 
 ---------
-Lower Priority
+Finished
 ---------
-- Documentation
-- Double check error modes:
-    - Set-FolderPermissions 
-    - Import-ExchangeSnapin
+- Debug display names in Exchange (Eg. O'Connor becomes OConnor)
