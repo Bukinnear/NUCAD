@@ -22,9 +22,9 @@ Add-Type -TypeDefinition @"
 .PARAMETER Message
     The text to write out/prompt the user with
 .INPUTS
-    String prompt to write to console as a prompt
+    String
 .OUTPUTS
-    Returns 1 or 0 for true and false, respectively
+    Boolean
 .NOTES    
 #>
 function Get-Confirmation
@@ -75,7 +75,7 @@ function Get-Confirmation
     Does not write to file by default.
 .EXAMPLE
     PS C:\> Try {
-        ...
+        Throw "Error"
     }
     catch
     {
@@ -87,11 +87,15 @@ function Get-Confirmation
 .PARAMETER LogType
     The severity of the information being written. Valid options are Error, Warning, and Debug
 .PARAMETER CaughtError
-    The error you want to write the details of. Can optionally be omitted to provide only infomation provided by LogString.
+    The error variable you want to write the details of. Can optionally be omitted to provide only infomation provided by LogString.
 .PARAMETER LogToFile
     Whether or not this error should be written to file. Accepts a boolean value
 .PARAMETER LogString
     The optional, contextual message to provide alongside the error details. Not required, but strongly recommended.
+.INPUTS
+    LogTypes    
+    Boolean
+    String
 #>
 function Write-NewestErrorMessage
 {
@@ -151,12 +155,15 @@ function Write-NewestErrorMessage
 .SYNOPSIS
     Needs to be run before anything else is called. Returns true if successful, and false if failed.
 .DESCRIPTION
-    Long description
+    Needs to be run before anything else is called. Returns true if successful, and false if failed.
 .EXAMPLE
     PS C:\> if (!Initialize-Module) {
         # Stop the script
     }
+
     If the initialization fails, provides the opportunity to abort any future actions
+.OUTPUTS
+    Boolean
 #>
 function Initialize-Module
 {
@@ -193,9 +200,9 @@ function Initialize-Module
     PS C:\> Import-ExchangeSnapin "2010"
     Imports the 2010 Exchange Management Snapin
 .INPUTS
-    String value contining the year version of the exchange snapin to import
+    String
 .PARAMETER ExchangeYear
-    Accepts "2010", or "2013"
+    The version of Exchange module that will be imported. Accepts "2010", or "2013"
 #>
 function Import-ExchangeSnapin 
 {
@@ -253,13 +260,11 @@ function Import-ExchangeSnapin
 .SYNOPSIS
     Writes a new line to console
 .DESCRIPTION
-    Writes a new line to console. Used to easily space out output.
+    Writes a new line to console. Used to easily space console output.
 .EXAMPLE
     PS C:\> Write-Space
 
-    PS C:\>
-    Writes a new line to console
-    
+    PS C:\>    
 #>
 function Write-Space
 {
@@ -279,8 +284,10 @@ function Write-Space
     ----------
 
     C:\>
-.INPUTS
+.PARAMETER Heading    
     Text to display as a heading
+.INPUTS
+    String
 #>
 function Write-Heading
 {
@@ -297,14 +304,44 @@ function Write-Heading
     Write-Host "`r`n----------`r`n$($Heading)`r`n----------`r`n"
 }
 
-# Prompt the user to provide a first name for the new account
+<#
+.SYNOPSIS
+    Prompt the user to provide a first name 
+.DESCRIPTION
+    Prompts the user to provide a first name. Outputs the string value provided by the user
+.EXAMPLE
+    PS C:\> $Name = Get-FirstName
+    ----------
+    Please enter a First Name: John
+    
+    PS C:\> $Name
+    John
+    PS C:\>
+.OUTPUTS
+    String
+#>
 function Get-FirstName
 {
     [string]$FirstName = Read-Host "----------`r`nPlease enter a First Name"
     return $FirstName
 }
 
-# Prompt the user to provide a last name for the new account
+<#
+.SYNOPSIS
+    Prompt the user to provide a last name 
+.DESCRIPTION
+    Prompts the user to provide a last name. Outputs the string value provided by the user
+.EXAMPLE
+    PS C:\> $Name = Get-LastName
+    ----------
+    Please enter a Last Name: John
+    
+    PS C:\> $Name
+    John
+    PS C:\>
+.OUTPUTS
+    String
+#>
 function Get-Lastname
 {
     [string]$LastName = Read-Host "----------`r`nPlease enter a Last Name"
@@ -312,6 +349,54 @@ function Get-Lastname
 }
 
 # Get the first and last name, and loop until it is approved. Returns an array containing the First and Last name
+<#
+.SYNOPSIS
+    Prompts the user to provide a first and last name, and returns the result in a hashtable. Names can optionally be cleaned
+.DESCRIPTION
+    Prompts the user to provide a first and last name, and returns the result in a hashtable. Cleaned names will be provided as well
+    The user can also specify whether they want the capitalization fixed as well.
+
+    Cleaned names will have folowing special characters removed:
+    ' " ’ ‘ ‛ / \ ; : ( ) [ ] ! @ $ % ^ & * ` ~ . and ‚
+    
+    The hastable contains the following values:
+    Firstname
+    Lastname
+    FirstnameCleaned
+    LastnameCleaned
+.EXAMPLE
+    PS C:\> Get-FullName
+
+    ----------
+    Please enter a First Name: joHN
+
+    ----------
+    Please enter a Last Name: d'oe
+
+    ----------
+    Would you like to fix/standardise the capitalisation of this name?
+    (Choose yes if you are not sure)
+
+    Y/N: y
+
+    ----------
+    Is this name correct?
+
+    John D'oe
+
+    Y/N: y
+
+    Name                           Value
+    ----                           -----
+    FirstnameClean                 John
+    Firstname                      John
+    LastnameClean                  Doe
+    Lastname                       D'oe
+.INPUTS
+    Boolean
+.OUTPUTS
+    Hashtable
+#>
 function Get-FullName
 {
     param (
