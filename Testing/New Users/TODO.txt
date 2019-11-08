@@ -1,7 +1,8 @@
 ---------
 Current 
 ---------
-
+Confirm that existing client scripts still work following name rework
+Change all instances of type [Microsoft.ActiveDirectory.Management.ADUser] to [string] (and update client scripts)
 
 ---------
 High Priority
