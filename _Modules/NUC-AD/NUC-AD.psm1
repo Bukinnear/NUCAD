@@ -900,7 +900,7 @@ function New-UserAccount
         [Parameter(
             Mandatory=$true
         )]
-        [string]
+        [Microsoft.ActiveDirectory.Management.ADUser]
         $MirrorUser,
 
         # The OU to place the user in

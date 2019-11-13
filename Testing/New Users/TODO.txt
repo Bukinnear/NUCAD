@@ -2,11 +2,15 @@
 Current 
 ---------
 Confirm that existing client scripts still work following name rework
-Change all instances of type [Microsoft.ActiveDirectory.Management.ADUser] to [string] (and update client scripts)
 
 ---------
 High Priority
 ---------
+- Check error on copying a user with no groups
+- Update Bucher docs
+- Update Ceda docs
+- Update Parc docs
+- Updated ANZPAA docs
 
 ---------
 Medium Priority
@@ -30,3 +34,4 @@ Lower Priority
 Finished
 ---------
 - Debug display names in Exchange (Eg. O'Connor becomes OConnor)
+- Change all instances of type [Microsoft.ActiveDirectory.Management.ADUser] to [string] (and update client scripts)
