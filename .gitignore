@@ -1,6 +1,11 @@
 /*
-/*/
+
 !/Testing/
 /Testing/*
 !/Testing/New Users/
+
 !/_Modules/
+
+!/_Utilities/
+/_Utilities/*
+!/_Utilities/TEMPLATE_New User Creation - AD.ps1

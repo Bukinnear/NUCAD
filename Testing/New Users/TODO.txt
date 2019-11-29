@@ -8,7 +8,6 @@ High Priority
 ---------
 - Check error on copying a user with no groups
 - Update Bucher docs
-- Update Ceda docs
 - Update Parc docs
 - Updated ANZPAA docs
 
@@ -18,6 +17,13 @@ Medium Priority
 - Documentation
 - Create O365 mailboxes (ATC)
 - Add functionality to add users to groups
+- Add contractors to script, eg.
+# Get the expiration Date
+    If(PromptForConfirmation "Is your user a Contractor? Will you need to set an expiration date?`r`nIf yes, please ensure the format is dd/MM/yyyy")
+        {
+            # Holding the expiration date as a variable
+            $ExpirationDate = Read-Host "Please enter an expiration date (dd/MM/yyyy)"
+        }
 
 ---------
 Lower Priority
