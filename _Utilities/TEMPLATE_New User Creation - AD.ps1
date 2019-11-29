@@ -55,9 +55,9 @@ If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
     return
 }
 
-$Script:Mail = # $Name.FirstnameClean + "." + $Name.LastnameClean # NOTE: This will vary per client. 
-$Script:PrimaryDomain = # "Domain.com.au" # NOTE: This will vary per client
-$Script:SecondaryDomains = @() # Fill this with comma-separated values of any extra domains the user may need in their aliases. NOTE: NOT requried for On-prem Exchange
+$Script:Mail = $Name.FirstnameClean + "." + $Name.LastnameClean # Everything that comes before the '@' in a the email address # NOTE: This will vary per client. 
+$Script:PrimaryDomain = "Domain.com.au" # The primary domain name # NOTE: This will vary per client
+$Script:SecondaryDomains = @("Domain.org", "Domain.com") # Fill this with comma-separated values of any extra domains the user may need in their aliases. NOTE: NOT requried for On-prem Exchange
 
 $Script:Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
 
