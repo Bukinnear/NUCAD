@@ -57,7 +57,7 @@ If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
 
 $Script:Mail = $Name.FirstnameClean + "." + $Name.LastnameClean # Everything that comes before the '@' in a the email address # NOTE: This will vary per client. 
 $Script:PrimaryDomain = "Domain.com.au" # The primary domain name # NOTE: This will vary per client
-$Script:SecondaryDomains = @("Domain.org", "Domain.com") # Fill this with comma-separated values of any extra domains the user may need in their aliases. NOTE: NOT requried for On-prem Exchange
+$Script:SecondaryDomains = @("Domain.org", "Domain.com") # Fill this with comma-separated values of any extra domains the user may need in their aliases. NOTE: NOT requried for On-prem Exchange. Leave this blank if that is the case
 
 $Script:Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
 
@@ -127,6 +127,22 @@ Set-MirroredGroups -Identity $NewUser.SamAccountName -MirrorUser $MirrorUser
 Set-ProxyAddresses -Identity $NewUser.SamAccountName -ProxyAddresses $Addresses.ProxyAddresses
 Set-LDAPMail -Identity $NewUser.SamAccountName -PrimarySmtpAddress $Addresses.PrimarySMTP
 Set-LDAPMailNickName -Identity $NewUser.SamAccountName -SamAccountName $SAM
+
+<#
+----------
+Create the user's home drive
+----------
+#>
+# NOTE: Remove this entire section if the client does not have Home drives
+
+Write-Heading "Creating Home Drive"
+
+New-HomeDrive `
+    -SamAccountName $SAM ` # NOTE: This command will use the user's username for the folder name
+    -Domain "domainname" `
+    -HomeDriveDirectory "\\Server\Directory\Path" ` # Root directory path, without the new user's folder name
+    -FolderName $SAM `
+    -DriveLetter "H"
 
 <#
 ----------
