@@ -1128,17 +1128,17 @@ function New-HomeDrive
     )
 
     $HomeDrive = New-UserFolder `
-    -SamAccountName $SamAccountName `
-    -Domain $Domain `
-    -ParentFolderPath $HomeDriveDirectory `
-    -FolderName $FolderName
+        -SamAccountName $SamAccountName `
+        -Domain $Domain `
+        -ParentFolderPath $HomeDriveDirectory `
+        -FolderName $FolderName
 
     if ($HomeDrive)
     {
         Set-HomeDrive `
-        -Identity $SamAccountName `
-        -HomeDrivePath $HomeDrive.Fullname `
-        -DriveLetter $DriveLetter
+            -Identity $SamAccountName `
+            -HomeDrivePath $HomeDrive.Fullname `
+            -DriveLetter $DriveLetter
     }
     else 
     {
