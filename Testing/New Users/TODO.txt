@@ -1,22 +1,22 @@
 ---------
 Current 
 ---------
-Confirm that existing client scripts still work following name rework
+
 
 ---------
 High Priority
 ---------
 - Check error on copying a user with no groups
-- Update Bucher docs
-- Update Parc docs
-- Updated ANZPAA docs
+- Office 365 New User Module (MAWF)
 
 ---------
 Medium Priority
 ---------
 - Documentation
 - Create O365 mailboxes (ATC)
-- Add functionality to add users to groups
+- Add functionality to add users to groups (MAWF)
+- Add functionality to add an address/pick from addresses
+
 - Add contractors to script, eg.
 # Get the expiration Date
     If(PromptForConfirmation "Is your user a Contractor? Will you need to set an expiration date?`r`nIf yes, please ensure the format is dd/MM/yyyy")
@@ -41,3 +41,6 @@ Finished
 ---------
 - Debug display names in Exchange (Eg. O'Connor becomes OConnor)
 - Change all instances of type [Microsoft.ActiveDirectory.Management.ADUser] to [string] (and update client scripts)
+- Update Bucher docs
+- Update Parc docs
+- Updated ANZPAA docs
