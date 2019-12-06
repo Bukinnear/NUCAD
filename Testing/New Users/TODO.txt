@@ -16,6 +16,7 @@ Medium Priority
 - Create O365 mailboxes (ATC)
 - Add functionality to add users to groups (MAWF)
 - Add functionality to add an address/pick from addresses
+- Write out address/manager info when copying from users
 
 - Add contractors to script, eg.
 # Get the expiration Date
