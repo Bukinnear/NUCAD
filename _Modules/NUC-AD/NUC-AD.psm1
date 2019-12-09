@@ -1230,11 +1230,11 @@ function Set-MirroredProperties
     try
     {
         Set-ADUser -Identity $Identity -Manager $MirrorUser.manager -State $MirrorUser.st -Country $MirrorUser.c -PostalCode $MirrorUser.postalCode -StreetAddress $MirrorUser.streetAddress -City $MirrorUser.l -Office $MirrorUser.physicalDeliveryOfficeName -HomePage $MirrorUser.HomePage        
-        Write-Output "- Address and manager have been set."
+        Write-Output "- Address and manager have been set:`r`n`r`nManager:`r`n$((get-aduser -identity $MirrorUser.manager | select name).name)`r`n`r`nAddress:`r`n$($MirrorUser.streetAddress)`r`n$($MirrorUser.l)`r`n$($MirrorUser.st) $($MirrorUser.postalCode)`r`n"
     }
     catch
     {
-        Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogToFile $true -LogString "Could not set some parameters - please double check the new account's address and manager"    
+        Write-NewestErrorMessage -LogType WARNING -CaughtError $_ -LogToFile $true -LogString "Could not set some parameters - please double check the new account's address, and manager"    
     }
 }
 
