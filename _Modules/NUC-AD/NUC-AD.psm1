@@ -1267,6 +1267,13 @@ function Set-MirroredGroups
         return
     }
 
+    if (!$Groups)
+    {
+        Write-Space
+        Write-Warning "Mirror user `"$($MirrorUser.Name)`" is not part of any groups. Continuing."
+        return
+    }
+
     Write-Host "`r`n----------`r`n$($MirrorUser.DisplayName) is part of the following groups:`r`n----------`r`n"
     foreach ($Group in $Groups)
     {
@@ -1462,6 +1469,42 @@ function Set-HomeDrive
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set the user profile's home drive"
     }    
+}
+
+<#
+.SYNOPSIS
+    Adds the given user to the given groups
+.DESCRIPTION
+    Long description
+.EXAMPLE
+    PS C:\> <example usage>
+    Explanation of what the example does
+.INPUTS
+    Inputs (if any)
+.OUTPUTS
+    Output (if any)
+.NOTES
+    General notes
+#>
+function Add-UserToGroups {
+    param (
+        # Identy of the user to add
+        [Parameter(
+            Mandatory=$true,
+            Position=0
+        )]
+        [string]
+        $Identity,
+
+        # Array of groups to add the user to
+        [Parameter(
+            Mandatory=$true,
+            Position=1
+        )]
+        [string[]]
+        $Groups
+    )
+    
 }
 
 <#

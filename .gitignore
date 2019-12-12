@@ -2,6 +2,7 @@
 
 !/Testing/
 /Testing/*
+!/Testing/TODO.txt
 !/Testing/New Users/
 
 !/_Modules/

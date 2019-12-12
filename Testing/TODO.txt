@@ -1,14 +1,13 @@
 ---------
 Current 
 ---------
+
 - Add functionality to add an address/pick from addresses
 - Write out address/manager info when copying from users
-
 
 ---------
 High Priority
 ---------
-- Check error on copying a user with no groups
 - Office 365 New User Module (MAWF)
 
 ---------
@@ -40,6 +39,7 @@ Lower Priority
 ---------
 Finished
 ---------
+- Check error on copying a user with no groups
 - Debug display names in Exchange (Eg. O'Connor becomes OConnor)
 - Change all instances of type [Microsoft.ActiveDirectory.Management.ADUser] to [string] (and update client scripts)
 - Update Bucher docs
