@@ -891,6 +891,11 @@ function New-UserAccount
         [string]
         $JobTitle,
 
+        # The account description - uses Job title by default
+        [Parameter()]
+        [string]
+        $Description = $JobTitle,
+
         # Phone number (Optional)
         [Parameter()]
         [string]

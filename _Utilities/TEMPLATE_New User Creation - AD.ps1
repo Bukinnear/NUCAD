@@ -7,6 +7,13 @@ Import the New User Creation - AD Module
 ----------
 #>
 
+<#
+NOTE: 
+This section could replaced with [Import-Module "C:/Path/to/script/NUC-AD" -force ] (no file extension is required in the path),
+but the below will allow the script to automatically import the NUC-AD module beside this script no matter where they are placed.
+Just don't touch this if you don't need to, and you should be alright.
+#>
+
 # Get the script's file path
 $Script:ScriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
@@ -61,7 +68,7 @@ $Script:SecondaryDomains = @("Domain.org", "Domain.com") # Fill this with comma-
 
 $Script:Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
 
-$Script:MirrorUser = Get-MirrorUser -UsernameFormat # "Firstname Lastname = Firstname.Lastname" # NOTE: This will vary per client
+$Script:MirrorUser = Get-MirrorUser -UsernameFormat "Firstname Lastname = Firstname.Lastname" # NOTE: This will vary per client
 $Script:OU = Get-OU $MirrorUser
 
 $ConfirmUserCreation = Confirm-NewAccountDetails `
