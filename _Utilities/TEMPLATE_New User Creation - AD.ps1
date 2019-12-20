@@ -43,7 +43,7 @@ Write-Heading "Starting User Creation Process"
 $Script:Name = Get-Fullname # Note: This variable is a hashtable with firstname, lastname, and cleaned varients thereof
 $Script:JobTitle = Get-JobTitle
 $Script:PhoneNumber = Get-PhoneNumber
-$Script:Password = Get-Password # -Password 'YourDefaultPasswordHere' (Optional)
+$Script:Password = Get-Password 
 
 # Pre-windows 2000 Logon name. This is normally what the user will log in with. 
 #LDAP Field: SamAccountName

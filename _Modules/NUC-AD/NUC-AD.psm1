@@ -509,22 +509,12 @@ function Get-PhoneNumber
 # Prompt the user to provide a password for the new account
 function Get-Password
 {
-    param (
-        # The password to set it to
-        [Parameter()]
-        [string]
-        $Password = 'Password99!'
-    )
-    
-    # Allow for a custom password
-    if (!(Get-Confirmation "----------`r`nWould you like to set the default password?`r`n(Choose 'No' to create your own)`r`n`r`n$($Password)"))
-    {
-        Write-Space
-        do
-        {
-            $Password = Read-Host "Please enter a Password"
-        } while ($Password -eq "" -or $null -eq $Password)
-    }
+    Write-Host -ForegroundColor Yellow "`r`nNOTE: Please don't use a 'default' password (consider auto-generating it?)`r`n"
+    do
+    {        
+        $Password = Read-Host "Please enter a Password"
+    } while ($Password -eq "" -or $Password -eq " " -or $null -eq $Password)
+
     return $Password
 }
 
