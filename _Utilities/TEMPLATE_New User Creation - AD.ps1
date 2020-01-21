@@ -57,7 +57,7 @@ $Script:UPN = # "$($Name.FirstnameClean).$($Name.LastnameClean)@Domain.com.au" #
 # Ensure that this account does not already exist
 If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
 {
-    Write-Warning "`r`nUser with SAM account of $($SAM) already exists!"
+    Write-Warning "`r`nA User with the same name/username already exists!"
     Write-Heading "Cancelled user creation"
     return
 }

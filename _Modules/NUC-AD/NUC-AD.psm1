@@ -1225,7 +1225,7 @@ function Set-MirroredProperties
     try
     {
         Set-ADUser -Identity $Identity -Manager $MirrorUser.manager -State $MirrorUser.st -Country $MirrorUser.c -PostalCode $MirrorUser.postalCode -StreetAddress $MirrorUser.streetAddress -City $MirrorUser.l -Office $MirrorUser.physicalDeliveryOfficeName -HomePage $MirrorUser.HomePage        
-        Write-Output "- Address and manager have been set:`r`n`r`nManager:`r`n$((get-aduser -identity $MirrorUser.manager | select name).name)`r`n`r`nAddress:`r`n$($MirrorUser.streetAddress)`r`n$($MirrorUser.l)`r`n$($MirrorUser.st) $($MirrorUser.postalCode)`r`n"
+        Write-Output "- Address and manager have been set:`r`n`r`nManager:`r`n$($MirrorUser.manager)`r`n`r`nAddress:`r`n$($MirrorUser.streetAddress)`r`n$($MirrorUser.l)`r`n$($MirrorUser.st) $($MirrorUser.postalCode)`r`n"
     }
     catch
     {
