@@ -595,7 +595,7 @@ function Get-Addresses
         }
         else 
         {
-            $Script:Mail = Read-Host "Enter the email address (Only enter the text BEFORE the '@' sign)"    
+            $MailName = Read-Host "Enter the email address (Only enter the text BEFORE the '@' sign)"    
         }
     }
 }
