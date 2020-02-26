@@ -506,6 +506,16 @@ function Get-PhoneNumber
     return $PhoneNumber
 }
 
+function Get-MobileNumber
+{
+    Write-Space
+    do 
+    {
+        $MobileNumber = Read-Host "----------`r`nPlease enter a mobile number (Leave blank for none)"        
+    } while (($MobileNumber -ne "") -and ($Null -ne $MobileNumber) -and !(Get-Confirmation "Is this correct?`r`n`r`n$($MobileNumber)"))
+    return $MobileNumber
+}
+
 # Prompt the user to provide a password for the new account
 function Get-Password
 {
@@ -1142,6 +1152,70 @@ function New-HomeDrive
     }
     
 } 
+
+function Set-MobileNumber
+{
+    param (
+        [Paramter(
+            Mandatory=$true
+        )]
+        [string]
+        $Identity,
+
+        [Paramater(
+            Mandatory=$true
+        )]
+        [string]
+        $MobileNumber
+    )
+
+    try 
+    {
+        Set-ADUser -Identity $Identity -MobilePhone $MobileNumber
+    }
+    catch 
+    {
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set user's mobile number."
+    }
+
+}
+
+function Set-Company
+{
+    Param(
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Identity,
+        
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Company
+    )
+    
+    try
+    {
+        Set-ADUser -Identity $Identity -Company $Company
+    }
+    catch
+    {
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set user's Company attribute."
+    }
+}
+
+function Set-OfficeAddress {
+    param ( 
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Identity
+    )
+    
+}
 
 function Set-FolderPermissions
 {

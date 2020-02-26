@@ -2,13 +2,25 @@
 Current 
 ---------
 
-- Add functionality to add an address/pick from addresses
-- Write out address/manager info when copying from users
+CEDA:
+
+Address
+Set
+
+Work Hours ({CustomAttribute2})
+get
+set
+
+PO Number ({CustomAttribute1})
+set
+
+
 
 ---------
 High Priority
 ---------
-- Office 365 New User Module (MAWF)
+- Add functionality to add an address/pick from addresses
+- Write out address/manager info when copying from users
 
 ---------
 Medium Priority
@@ -16,6 +28,7 @@ Medium Priority
 - Documentation
 - Create O365 mailboxes (ATC)
 - Add functionality to add users to groups (MAWF)
+- Add check for email address taken (for on-prem?)
 
 - Add contractors to script, eg.
 # Get the expiration Date
@@ -34,7 +47,7 @@ Lower Priority
 - Create verification for Sam account name/UPN
     - Prompt to provide a different SAM/UPN if the name is taken
 - Provide parameter validation for functions (Eg. ValidateNotNullOrEmpty)
-- Research opening scripts as admin (for desktop shortcuts)
+- Office 365 New User Module (MAWF)
 
 ---------
 Finished
