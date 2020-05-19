@@ -218,6 +218,20 @@ function Import-ExchangeSnapin
     
     switch ($ExchangeYear)
     {
+        '2007'
+        {
+            try
+            {
+                Write-Space
+                Add-PSSnapin Microsoft.Exchange.Management.PowerShell.Admin
+                return $true
+            }
+            catch
+            {
+                Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Exchange 2007 Management module."
+                return $false                    
+            }
+        }
         "2010" 
         {  
             try
@@ -235,7 +249,7 @@ function Import-ExchangeSnapin
                 }
             }
         }
-        "2013"
+        { '2013', '2016', '2019' -contains $_}
         {
             try
             {
@@ -245,13 +259,13 @@ function Import-ExchangeSnapin
             }
             catch
             {
-                Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Exchange 2013 Management module."
+                Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Exchange Management module."
                 return $false                    
             }
         }
         Default 
         {
-            throw "Could not import exchange module - no year specified"
+            throw "Could not import exchange module - no valid year specified"
         }
     }
 }
@@ -521,7 +535,7 @@ function Get-Password
 {
     Write-Host -ForegroundColor Yellow "`r`nNOTE: Please don't use a 'default' password (consider auto-generating it?)`r`n"
     do
-    {        
+    {
         $Password = Read-Host "Please enter a Password"
     } while ($Password -eq "" -or $Password -eq " " -or $null -eq $Password)
 
