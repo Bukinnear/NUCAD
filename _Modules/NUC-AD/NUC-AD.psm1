@@ -210,15 +210,18 @@ function Import-ExchangeSnapin
         # The version of Exchange that we will be importing
         [Parameter(
             Mandatory=$true
-        )]
-        [ValidateSet("2010", "2013")]
-        [string]
+        )]        
+        [Int]
         $ExchangeYear
     )
+
+    # Validate the input year
+    if (2007, 2010, 2013, 2016, 2019 -notcontains $ExchangeYear)
+    { return $false }
     
     switch ($ExchangeYear)
     {
-        '2007'
+        2007
         {
             try
             {
@@ -232,7 +235,7 @@ function Import-ExchangeSnapin
                 return $false                    
             }
         }
-        "2010" 
+        2010
         {  
             try
             {
@@ -249,7 +252,7 @@ function Import-ExchangeSnapin
                 }
             }
         }
-        { '2013', '2016', '2019' -contains $_}
+        { 2013, 2016, 2019 -contains $_ }
         {
             try
             {
@@ -265,7 +268,8 @@ function Import-ExchangeSnapin
         }
         Default 
         {
-            throw "Could not import exchange module - no valid year specified"
+            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import exchange module - no valid year specified"
+            return $false
         }
     }
 }
@@ -1592,6 +1596,76 @@ function Add-UserToGroups {
 
 <#
 .SYNOPSIS
+    Returns the name of the Mailbox Database with the greatest amount of free space available from the values provided. Returns null if nothing could be found.
+.DESCRIPTION
+    Returns the name of the Mailbox Database with the greatest amount of free space available from the values provided. Returns null if nothing could be found.
+.EXAMPLE
+    
+.INPUTS
+    
+.OUTPUTS
+    
+#>
+function Get-MostAvailableMailboxDatabase 
+{
+    param (
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string[]]
+        $DatabaseNames,
+
+        # The exchange year version
+        [Parameter(
+            Mandatory=$true
+        )]
+        [String]
+        $ExchangeYear            
+    )
+    
+    if (!(Import-ExchangeSnapin -ExchangeYear $ExchangeYear)) 
+    {
+        Write-Host "`r`nCould not load exchange snap-in"
+        return $false  
+    }
+    
+    $MostAvailable = $null
+
+    foreach ($name in $DatabaseNames)
+    {
+        try 
+        {
+            $database = Get-MailboxDatabase -Identity $name -Status | select name, AvailableNewMailboxSpace
+            
+            if ($null = $MostAvailable)
+            {
+                $MostAvailable = $database
+            }
+            elseif ($MostAvailable.AvailableNewMailboxSpace -lt $database.AvailableNewMailboxSpace)
+            {
+                $MostAvailable = $database
+            }
+        }
+        catch
+        {
+            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Something went wrong while getting the most available mailbox database"
+        }
+    }
+
+    Remove-ExchangeSnapins
+    
+    if ($null -ne $MostAvailable)
+    { 
+        return $MostAvailable.name
+    }
+    else 
+    {
+        return $null
+    }    
+}
+
+<#
+.SYNOPSIS
     Creates/Enables an existing user's mailbox
 .DESCRIPTION
     Creates/enables an existing user's mailbox. 
@@ -1719,7 +1793,7 @@ function Enable-UserMailbox
             Set-ADUser -Identity $Identity -GivenName $FirstnameClean -Surname $LastnameClean -DisplayName "$($FirstnameClean) $($LastnameClean)"
         }
         catch 
-        {            
+        {
             Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set user's name before enabling mailbox.`r`nPlease double check the proxy addresses."
         }
     }
@@ -1739,7 +1813,7 @@ function Enable-UserMailbox
     }
     catch
     {
-        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not enable mailbox."        
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not enable mailbox."
     }
     finally
     {

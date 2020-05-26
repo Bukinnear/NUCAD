@@ -164,7 +164,7 @@ Enable-UserMailbox `
     -Identity $NewUser.SamAccountName `
     -Alias $Mail `
     -Database "YourDatabaseName" `
-    -ExchangeYear "20xx" # Choose from 2010 or 2013
+    -ExchangeYear 2016 # the year of the exchange server
 
 <#
 ----------
