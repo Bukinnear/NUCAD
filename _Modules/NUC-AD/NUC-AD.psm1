@@ -167,16 +167,23 @@ function Write-NewestErrorMessage
 #>
 function Initialize-Module
 {
-    # Import AD Module
-    try
-    {
-        Import-Module ActiveDirectory -ErrorAction Stop
-    }
-    catch
-    {
-        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Active Directory Module. Aborting."
-        return $false
-    }
+    param (
+        # Specify the year version of Exchange if you intend to use it
+        [Parameter(
+            Mandatory=$true,
+            ParameterSetName='Exchange'
+        )]
+        [int]
+        $Exchange,
+
+        # Blank variable for when exchange is not specified
+        [Parameter(
+            Mandatory=$false,
+            ParameterSetName='NoSet'
+        )]
+        [int]
+        $NoSet
+    )
     
     # Check if we are running as admin
     $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -187,6 +194,30 @@ function Initialize-Module
         {
             return $false
         }    
+    }
+
+    if ($PSCmdlet.ParameterSetName -eq "Exchange")
+    {
+        if (!(Import-ExchangeSnapin -ExchangeYear $Exchange))
+        {
+            Write-Warning "Could not import the Exchange snap-in`r`n"
+
+            if (!(Get-Confirmation "WARNING: Could not import the exchange snap-in. You may not be able to create the user mailbox.`r`n`r`nAre you sure you want to continue?"))
+            {
+                return $false
+            } 
+        }
+    }
+
+    # Import AD Module
+    try
+    {
+        Import-Module ActiveDirectory -ErrorAction Stop
+    }
+    catch
+    {
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not import Active Directory Module. Aborting."
+        return $false
     }
     return $true
 }
@@ -272,6 +303,8 @@ function Import-ExchangeSnapin
             return $false
         }
     }
+    # if no conclusion was reached until now
+    return $false
 }
 
 <#
@@ -506,11 +539,7 @@ function Get-CapitalisedName
 Function Get-JobTitle
 {
     Write-Space
-    do 
-    {
-        $JobTitle = Read-Host "----------`r`nPlease enter a Job Description"
-    } while (!(Get-Confirmation "Is this correct?`r`n`r`n$($JobTitle)"))
-    return $JobTitle
+    return Read-Host "----------`r`nPlease enter a Job Description"
 }
 
 # Prompt the user to provide a phone number for the new account
@@ -1560,6 +1589,46 @@ function Set-HomeDrive
 
 <#
 .SYNOPSIS
+    Sets the default retention policy of the given user's mailbox
+.DESCRIPTION
+    Sets the default retention policy of the given user's mailbox
+.EXAMPLE
+
+.INPUTS
+    
+.OUTPUTS
+
+#>
+function Set-MailboxDefaultRetentionPolicy 
+{
+    param (
+        # The identity of the user mailbox
+        [Parameter(
+            Mandatory=$true            
+        )]
+        [string]
+        $Identity,
+
+        # The name of the retention policy to set as default
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $PolicyName
+    )
+    
+    try 
+    {
+        Set-Mailbox -Identity $Identity -RetentionPolicy $PolicyName -ErrorAction Stop
+    }
+    catch 
+    {
+        Write-NewestErrorMessage -LogType Warning -LogToFile $true -CaughtError $_ -LogString "Could not set the default retention policy"
+    }
+}
+
+<#
+.SYNOPSIS
     Adds the given user to the given groups
 .DESCRIPTION
     Long description
@@ -1573,7 +1642,8 @@ function Set-HomeDrive
 .NOTES
     General notes
 #>
-function Add-UserToGroups {
+function Add-UserToGroups 
+{
     param (
         # Identy of the user to add
         [Parameter(
@@ -1609,25 +1679,13 @@ function Add-UserToGroups {
 function Get-MostAvailableMailboxDatabase 
 {
     param (
+        # The names of the databases to compare
         [Parameter(
             Mandatory=$true
         )]
         [string[]]
-        $DatabaseNames,
-
-        # The exchange year version
-        [Parameter(
-            Mandatory=$true
-        )]
-        [String]
-        $ExchangeYear            
+        $DatabaseNames       
     )
-    
-    if (!(Import-ExchangeSnapin -ExchangeYear $ExchangeYear)) 
-    {
-        Write-Host "`r`nCould not load exchange snap-in"
-        return $false  
-    }
     
     $MostAvailable = $null
 
@@ -1769,19 +1827,7 @@ function Enable-UserMailbox
             ParameterSetName="NoName"
         )]
         [String]
-        $Database, 
-
-        # The exchange year version
-        [Parameter(
-            Mandatory=$true,
-            ParameterSetName="Name"
-        )]
-        [Parameter(
-            Mandatory=$true,
-            ParameterSetName="NoName"
-        )]
-        [String]
-        $ExchangeYear
+        $Database
     )
 
     [bool] $SetName = $PSCmdlet.ParameterSetName -eq "Name"
@@ -1798,11 +1844,6 @@ function Enable-UserMailbox
         }
     }
 
-    if (!(Import-ExchangeSnapin -ExchangeYear $ExchangeYear)) 
-    {
-        Write-Host "`r`nCould not load exchange snap-in"
-    }
-
     try 
     {
         $MailboxResult = Enable-Mailbox -Identity $Identity -Alias $Alias -Database $Database -ErrorAction Stop
@@ -1814,10 +1855,6 @@ function Enable-UserMailbox
     catch
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not enable mailbox."
-    }
-    finally
-    {
-        Remove-ExchangeSnapins
     }
 
     if ($SetName)
@@ -1831,6 +1868,46 @@ function Enable-UserMailbox
             Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set user's name back after enabling mailbox.`r`nPlease double check user's name."
         }
     }
+}
+
+<#
+.SYNOPSIS
+    Enables an in-place archive for the specified user mailbox, on the specified database
+.DESCRIPTION
+    Enables an in-place archive for the specified user mailbox, on the specified database
+.EXAMPLE
+    
+.INPUTS
+    
+.OUTPUTS
+
+#>
+function Enable-MailboxArchive 
+{
+    param (
+        # Identity of the user/mailbox
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Identity,
+
+        # Database to enable to archive on
+        [Parameter(
+            Mandatory=$true
+        )]
+        [string]
+        $Database
+    )
+
+    try 
+    {
+        $Archive = Enable-mailbox $Identity -archive -ArchiveDatabase $Database -ErrorAction Stop
+    }
+    catch 
+    {
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "A problem occurred while trying to enable the mailbox archive"
+    }    
 }
 
 function Remove-ExchangeSnapins 
