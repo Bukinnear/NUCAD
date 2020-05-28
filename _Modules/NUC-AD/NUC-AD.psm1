@@ -1619,7 +1619,7 @@ function Set-MailboxDefaultRetentionPolicy
     
     try 
     {
-        Set-Mailbox -Identity $Identity -RetentionPolicy $PolicyName -ErrorAction Stop
+        $Mailbox = Set-Mailbox -Identity $Identity -RetentionPolicy $PolicyName -ErrorAction Stop
     }
     catch 
     {

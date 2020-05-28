@@ -14,8 +14,6 @@ set
 PO Number ({CustomAttribute1})
 set
 
-
-
 ---------
 High Priority
 ---------
@@ -29,6 +27,7 @@ Medium Priority
 - Create O365 mailboxes (ATC)
 - Add functionality to add users to groups (MAWF)
 - Add check for email address taken (for on-prem?)
+- Liveconnect & creating home drives (permission failed - need to catch this)
 
 - Add contractors to script, eg.
 # Get the expiration Date
