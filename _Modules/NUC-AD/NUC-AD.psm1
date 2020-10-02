@@ -549,7 +549,7 @@ function Get-PhoneNumber
     do 
     {
         $PhoneNumber = Read-Host "----------`r`nPlease enter a phone number (Leave blank for none)"        
-    } while (($PhoneNumber -ne "") -and ($Null -ne $PhoneNumber) -and !(Get-Confirmation "Is this correct?`r`n`r`n$($PhoneNumber)"))
+    } while (($PhoneNumber -ne "") -and ($Null -ne $PhoneNumber))
     return $PhoneNumber
 }
 
