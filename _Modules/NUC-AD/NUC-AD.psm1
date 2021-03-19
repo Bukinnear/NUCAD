@@ -1695,7 +1695,7 @@ function Get-MostAvailableMailboxDatabase
         {
             $database = Get-MailboxDatabase -Identity $name -Status | select name, AvailableNewMailboxSpace
             
-            if ($null = $MostAvailable)
+            if ($null -eq $MostAvailable)
             {
                 $MostAvailable = $database
             }
@@ -1710,7 +1710,7 @@ function Get-MostAvailableMailboxDatabase
         }
     }
 
-    Remove-ExchangeSnapins
+    #Remove-ExchangeSnapins
     
     if ($null -ne $MostAvailable)
     { 
