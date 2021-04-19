@@ -491,7 +491,7 @@ function Get-FullName
     }
 }
 
-# Cleans the given name by removing leading/trailing white space, and illegal characters
+# Cleans the given string by converting to lowercase and removing leading/trailing white space, and illegal characters
 function Get-CleanedName
 {
     param (
@@ -514,6 +514,7 @@ function Get-CleanedName
 
     #Remove white spaces
     $Name = $Name.Trim()
+    $Name = $Name.ToLower()
     
     return $Name
 }
