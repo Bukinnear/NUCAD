@@ -560,7 +560,7 @@ function Get-MobileNumber
     do 
     {
         $MobileNumber = Read-Host "----------`r`nPlease enter a mobile number (Leave blank for none)"        
-    } while (($MobileNumber -ne "") -and ($Null -ne $MobileNumber) -and !(Get-Confirmation "Is this correct?`r`n`r`n$($MobileNumber)"))
+    } while (($MobileNumber -ne "") -and ($Null -ne $MobileNumber))
     return $MobileNumber
 }
 
