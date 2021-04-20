@@ -144,10 +144,11 @@ Create the user's home drive
 
 Write-Heading "Creating Home Drive"
 
+# NOTE: Remove the comments in this command, or it will fail!
 New-HomeDrive `
-    -SamAccountName $SAM ` # NOTE: This command will use the user's username for the folder name
+    -SamAccountName $SAM ` # NOTE: This command will use the user's username for the folder name REMOVE ME
     -Domain "domainname" `
-    -HomeDriveDirectory "\\Server\Directory\Path" ` # Root directory path, without the new user's folder name
+    -HomeDriveDirectory "\\Server\Directory\Path" ` # Root directory path, without the new user's folder name REMOVE ME
     -FolderName $SAM `
     -DriveLetter "H"
 
