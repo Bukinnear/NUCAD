@@ -984,7 +984,7 @@ function New-UserAccount
             -Title $JobTitle `
             -OfficePhone $PhoneNumber `
             -Department $MirrorUser.Department `
-            -ScriptPath $MirrorUser.ScriptPath
+            -ScriptPath $MirrorUser.ScriptPath `
             -Path $OU `
             -Enabled $True `
             -AccountPassword (ConvertTo-SecureString $Password -AsPlainText -force) `
