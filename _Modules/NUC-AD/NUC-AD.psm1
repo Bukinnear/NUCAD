@@ -562,12 +562,8 @@ function Get-MobileNumber
 function Get-Password
 {
     Write-Host -ForegroundColor Yellow "`r`nNOTE: Please don't use a 'default' password (consider auto-generating it?)`r`n"
-    do
-    {
-        $Password = Read-Host "Please enter a Password"
-    } while ($Password -eq "" -or $Password -eq " " -or $null -eq $Password)
-
-    return $Password
+    
+    return Read-Host "Please enter a Password" -AsSecureString
 }
 
 <#
@@ -873,9 +869,8 @@ function Confirm-NewAccountDetails
         [string]
         $EmailAddress,
 
-        [Parameter(
-            Mandatory=$true)]
-        [string]
+        [Parameter()]
+        [SecureString]
         $Password,
 
         [Parameter(
@@ -885,7 +880,7 @@ function Confirm-NewAccountDetails
 
     )
 
-    $ConfirmationMessage = "----------`r`nYou are about to create an account with the following details:`r`n`r`nFirst Name: $($Firstname)`r`n`r`nLast Name: $($Lastname)`r`n`r`nJob Title: $($JobTitle)`r`n`r`nUsername: $($SamAccountName)`r`n`r`nEmail Address: $($EmailAddress)`r`n`r`nAccount Password: $($Password)`r`n`r`nAccount to Mirror: $($MirrorUser.DisplayName)`r`n`r`nDo you wish to proceed?"
+    $ConfirmationMessage = "----------`r`nYou are about to create an account with the following details:`r`n`r`nFirst Name: $($Firstname)`r`n`r`nLast Name: $($Lastname)`r`n`r`nJob Title: $($JobTitle)`r`n`r`nUsername: $($SamAccountName)`r`n`r`nEmail Address: $($EmailAddress)`r`n`r`nAccount to Mirror: $($MirrorUser.DisplayName)`r`n`r`nDo you wish to proceed?"
     return (Get-Confirmation $ConfirmationMessage)
 }
 
@@ -961,7 +956,7 @@ function New-UserAccount
         [Parameter(
             Mandatory=$true
         )]
-        [string]
+        [SecureString]
         $Password
     )
     try 
@@ -981,7 +976,7 @@ function New-UserAccount
             -ScriptPath $MirrorUser.ScriptPath `
             -Path $OU `
             -Enabled $True `
-            -AccountPassword (ConvertTo-SecureString $Password -AsPlainText -force) `
+            -AccountPassword $Password `
             -ErrorAction Stop
     }
     catch [UnauthorizedAccessException]
@@ -1006,11 +1001,11 @@ function New-UserAccount
         for (;;)
         {
             # Prompt the user for a new password
-            $Password = Read-Host "`r`nPlease enter a password"
+            $Password = Get-Password
 
             try 
             {
-                Set-ADAccountPassword -Identity $NewUser -Reset -NewPassword (ConvertTo-SecureString -AsPlainText $Password -Force)
+                Set-ADAccountPassword -Identity $NewUser -Reset -NewPassword $Password
                 Enable-ADAccount $NewUser
 
                 Write-Host "`r`n- Successfully set account password. Continuing."
