@@ -887,6 +887,7 @@ function Confirm-NewAccountDetails
 # Creates a new user from the parameters provided. Returns true if the account was created successfully, and false if not.
 function New-UserAccount 
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # First name
         [Parameter(
@@ -1040,6 +1041,7 @@ function New-UserAccount
 
 function New-Directory
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # The folder to create the new directory under
         [Parameter(
@@ -1088,6 +1090,7 @@ function New-Directory
 
 function New-UserFolder
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # Sam name of the user
         [Parameter(
@@ -1133,6 +1136,7 @@ function New-UserFolder
 
 function New-HomeDrive
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # The user's Sam Account Name
         [Parameter(
@@ -1193,6 +1197,7 @@ function New-HomeDrive
 
 function Set-MobileNumber
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         [Paramter(
             Mandatory=$true
@@ -1220,6 +1225,7 @@ function Set-MobileNumber
 
 function Set-Company
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     Param(
         [Parameter(
             Mandatory=$true
@@ -1243,8 +1249,10 @@ function Set-Company
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set user's Company attribute."
     }
 }
-
-function Set-OfficeAddress {
+<#
+function Set-OfficeAddress 
+{
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param ( 
         [Parameter(
             Mandatory=$true
@@ -1254,9 +1262,11 @@ function Set-OfficeAddress {
     )
     
 }
-
+#>
 function Set-FolderPermissions
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([System.Boolean])]
     param (
         # Path to the folder
         [Parameter(
@@ -1319,6 +1329,7 @@ function Set-FolderPermissions
 # Copies properties from the mirrored user to the provided account
 function Set-MirroredProperties
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # User to set properties on
         [Parameter(
@@ -1348,6 +1359,7 @@ function Set-MirroredProperties
 # Copies groups from the mirrored user to the provided account
 function Set-MirroredGroups 
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # User to add to the groups
         [Parameter(
@@ -1402,6 +1414,7 @@ function Set-MirroredGroups
 
 function Set-ProxyAddresses
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # The new user to add the addresses to
         [Parameter(
@@ -1432,6 +1445,7 @@ function Set-ProxyAddresses
 
 function Set-LDAPMail
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # The new user to add the field to
         [Parameter(
@@ -1462,6 +1476,7 @@ function Set-LDAPMail
 
 function Set-LDAPMailNickName
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # The new user to add the field to
         [Parameter(
@@ -1491,6 +1506,7 @@ function Set-LDAPMailNickName
 
 function Set-UserFolderPermissions 
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # Identity of the user to provide access to
         [Parameter(
@@ -1543,6 +1559,7 @@ function Set-UserFolderPermissions
 
 function Set-HomeDrive 
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # User identity to set the home drive on
         [Parameter(
@@ -1592,6 +1609,7 @@ function Set-HomeDrive
 #>
 function Set-MailboxDefaultRetentionPolicy 
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param (
         # The identity of the user mailbox
         [Parameter(
@@ -1903,6 +1921,9 @@ function Enable-MailboxArchive
 
 function Remove-ExchangeSnapins 
 {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param()
+
     foreach ($Snapin in (Get-PSSnapin))
     {
         if ($Snapin.Name -like "*Exchange.Management*")
