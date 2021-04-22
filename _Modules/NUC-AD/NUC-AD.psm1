@@ -1,5 +1,4 @@
 $LogPath = 'C:\temp\UserCreationLogs\UserCreationADLog.txt'
-$ErrorsFound = $false
 # Import-Module -Name "C:\Code\Powershell\_Modules\NUC-AD" -Force
 
 Add-Type -TypeDefinition @"
@@ -142,11 +141,6 @@ function Write-NewestErrorMessage
     {
         $LogFileText = "$(Get-Date -Format "yyyy/MM/dd | HH:mm:ss") | $($LogType.ToString()) | $($LogString) | Category: $($CaughtError.CategoryInfo.Category) | Message: $($CaughtError.Exception.Message)"
         Out-File -FilePath $LogPath -Append -InputObject $LogFileText
-
-        if ($LogType.ToString() -ne "DEBUG")
-        {
-            $ErrorsFound = $true
-        }
     }
 }
 
