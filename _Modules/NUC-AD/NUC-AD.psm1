@@ -939,6 +939,11 @@ function New-UserAccount
         [string]
         $PhoneNumber,
 
+        # Phone number (Optional)
+        [Parameter()]
+        [string]
+        $Webpage,
+
         # User to mirror permissions from
         [Parameter(
             Mandatory=$true
@@ -973,6 +978,7 @@ function New-UserAccount
             -Description $JobTitle `
             -Title $JobTitle `
             -OfficePhone $PhoneNumber `
+            -HomePage $Webpage `
             -Department $MirrorUser.Department `
             -ScriptPath $MirrorUser.ScriptPath `
             -Path $OU `

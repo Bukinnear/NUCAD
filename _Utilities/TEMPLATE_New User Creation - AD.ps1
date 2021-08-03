@@ -65,6 +65,7 @@ If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
 $Script:Mail = $Name.FirstnameClean + "." + $Name.LastnameClean # Everything that comes before the '@' in a the email address # NOTE: This will vary per client. 
 $Script:PrimaryDomain = "Domain.com.au" # The primary domain name # NOTE: This will vary per client
 $Script:SecondaryDomains = @("Domain.org", "Domain.com") # Fill this with comma-separated values of any extra domains the user may need in their aliases. NOTE: NOT requried for On-prem Exchange. Leave this blank if that is the case
+$Script:Webpage = "https://www.domain.com.au/" # The user account's home/web page address
 
 $Script:Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
 
