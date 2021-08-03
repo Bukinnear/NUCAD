@@ -103,6 +103,7 @@ $Script:NewUser = New-UserAccount `
     -UPN $UPN `
     -EmailAddress $Addresses.PrimarySMTP `
     -JobTitle $JobTitle `
+    -HomePage $Webpage `
     -PhoneNumber $PhoneNumber `
     -MirrorUser $MirrorUser `
     -OU $OU `
