@@ -46,7 +46,7 @@ $Script:PhoneNumber = Get-PhoneNumber
 $Script:Password = Get-Password 
 
 # Pre-windows 2000 Logon name. This is normally what the user will log in with. 
-#LDAP Field: SamAccountName
+# LDAP Field: SamAccountName
 $Script:SAM = # $Name.FirstnameClean + "." + $Name.LastnameClean # NOTE: This will vary per client
 
 
