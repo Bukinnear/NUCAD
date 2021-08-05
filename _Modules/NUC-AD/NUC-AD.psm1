@@ -1646,18 +1646,12 @@ function Set-MailboxDefaultRetentionPolicy
 .SYNOPSIS
     Adds the given user to the given groups
 .DESCRIPTION
-    Long description
+    Checks the groups provided, and adds the user if they are missing from any of them
 .EXAMPLE
-    PS C:\> <example usage>
+    PS C:\> Add-GroupMemberships -Identity "JDoe" -Groups @("Group_1", "Group-2")
     Explanation of what the example does
-.INPUTS
-    Inputs (if any)
-.OUTPUTS
-    Output (if any)
-.NOTES
-    General notes
 #>
-function Add-UserToGroups 
+function Add-GroupMemberships
 {
     param (
         # Identy of the user to add
@@ -1676,7 +1670,27 @@ function Add-UserToGroups
         [string[]]
         $Groups
     )
+
+    # Do not continue if there are no groups
+    if ($Groups.Count -lt 1) { return }
     
+    $memberships = Get-ADPrincipalGroupMembership $Identity | select Name, SamAccountName        
+
+    # Check for existing group memberships, and add them if they are missing
+    foreach ($group in $Groups) 
+    {
+        if ($memberships.SamAccountName -notcontains $group)
+        {
+            try 
+            {
+                Add-ADPrincipalGroupMembership -Identity $Identity -MemberOf $group
+            }                
+            catch 
+            { 
+                Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Something went wrong while adding the user to group: $(group)"
+            }
+        }
+    }    
 }
 
 <#
