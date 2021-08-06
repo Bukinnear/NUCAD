@@ -1648,7 +1648,7 @@ function Set-MailboxDefaultRetentionPolicy
 .DESCRIPTION
     Checks the groups provided, and adds the user if they are missing from any of them
 .EXAMPLE
-    PS C:\> Add-GroupMemberships -Identity "JDoe" -Groups @("Group_1", "Group-2")
+    PS C:\> Add-GroupMemberships -Identity "JDoe" -Groups "Group_1", "Group-2"
     Explanation of what the example does
 #>
 function Add-GroupMemberships
