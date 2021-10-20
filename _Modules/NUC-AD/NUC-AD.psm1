@@ -998,7 +998,7 @@ function New-UserAccount
         $NewUser = Get-NewAccount -SamAccountName $SamAccountName
         if (!$NewUser)
         {
-            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not find new account after assigning the password"
+            Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not find new account to assign the password"
             return $null
         }
 
