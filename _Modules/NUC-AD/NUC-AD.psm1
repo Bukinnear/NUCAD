@@ -938,6 +938,31 @@ function New-UserAccount
         [Parameter()]
         [string]
         $PhoneNumber,
+        
+        # Street Address
+        [Parameter()]
+        [String]
+        $StreetAddress,
+        
+        # City
+        [Parameter()]
+        [string]
+        $City,
+
+        # State
+        [Parameter()]
+        [string]
+        $State,
+
+        # Post Code
+        [Parameter()]
+        [string]
+        $PostalCode,
+
+        # Country
+        [Parameter()]
+        [string]
+        $Country,
 
         # Phone number (Optional)
         [Parameter()]
@@ -978,6 +1003,11 @@ function New-UserAccount
             -Description $JobTitle `
             -Title $JobTitle `
             -OfficePhone $PhoneNumber `
+            -StreetAddress $StreetAddress `
+            -City $City `
+            -State $State `
+            -PostalCode $PostalCode `
+            -Country $Country `
             -HomePage $Webpage `
             -Department $MirrorUser.Department `
             -ScriptPath $MirrorUser.ScriptPath `
