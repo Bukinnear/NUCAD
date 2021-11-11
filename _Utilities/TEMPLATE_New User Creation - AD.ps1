@@ -41,18 +41,17 @@ Get new user details
 Write-Heading "Starting User Creation Process"
 
 $Script:Name = Get-Fullname # Note: This variable is a hashtable with firstname, lastname, and cleaned varients thereof
-$Script:JobTitle = Get-JobTitle
-$Script:PhoneNumber = Get-PhoneNumber
-$Script:Password = Get-Password 
+
+# User logon name/User Principal Name. This will control which domain the user is created under.
+# LDAP Field: UserPrincipleName (User Logon Name).
+$Script:UPN = # "$($Name.FirstnameClean).$($Name.LastnameClean)@Domain.com.au" # NOTE: Check what domains the user can be created under in AD
 
 # Pre-windows 2000 Logon name. This is normally what the user will log in with. 
 # LDAP Field: SamAccountName
 $Script:SAM = # $Name.FirstnameClean + "." + $Name.LastnameClean # NOTE: This will vary per client
 
-
-# User logon name/User Principle Name. This will control which domain the user is created under.
-# LDAP Field: UserPrincipleName (User Logon Name).
-$Script:UPN = # "$($Name.FirstnameClean).$($Name.LastnameClean)@Domain.com.au" # NOTE: Check what domains the user can be created under in AD
+# NOTE: this is OPTIONAL. Remove it if the username format is not likely to change
+# Confirm-Username -UPN ([ref]$UPN) -SamAccountName ([ref]$SAM) 
 
 # Ensure that this account does not already exist
 If (!(Confirm-AccountDoesNotExist -SamAccountName $SAM))
@@ -71,7 +70,9 @@ $Script:Webpage = "https://www.domain.com.au/" # The user account's home/web pag
 $Script:AdditionalGroups = @("Group-1", "Group_2") # a comma-separated list of groups to ensure the user is part of. Use the groups' SamAccountNames to avoid issues
 
 $Script:Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
-
+$Script:JobTitle = Get-JobTitle
+$Script:PhoneNumber = Get-PhoneNumber
+$Script:Password = Get-Password 
 $Script:MirrorUser = Get-MirrorUser -UsernameFormat "Firstname Lastname = Firstname.Lastname" # NOTE: This will vary per client
 $Script:OU = Get-OU $MirrorUser
 

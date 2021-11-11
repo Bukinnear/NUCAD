@@ -799,6 +799,60 @@ function Confirm-Name
     return (Get-Confirmation "----------`r`nIs this name correct?`r`n`r`n$($FirstName) $($LastName)")
 }
 
+function Confirm-Username
+{
+    param(
+        # Sam Account Name
+        [Parameter(Mandatory=$true)]
+        [ref]
+        $SamAccountName,
+
+        # User Principal Name
+        [Parameter(Mandatory=$true)]
+        [ref]
+        $UPN
+    )
+
+    for (;;)
+    {
+        $ConfirmMessage = "----------`r`nThe username has been set to:`r`n`r`nLogon Name (UPN): $($UPN.Value)`r`nPre-Windows 2000 (SAM): $($SamAccountName.Value)`r`n`r`nIs this correct?"
+
+        if (Get-Confirmation $ConfirmMessage)
+        {
+            if ($true)#Confirm-AccountDoesNotExist -SamAccountName $SamAccountName.Value)
+            {
+                return $true
+            }
+        }
+
+        if ($UPN.Value.IndexOf('@') -eq -1)
+        {
+            throw "No domain could be found in User's UPN."
+        }
+
+        $ReturnValue = (Read-Host "`r`nPlease enter the new User Logon Name (UPN) (without the '@domain').`r`nleave blank to leave unchanged`r`n").trim()
+
+        if ($ReturnValue)
+        { 
+            $UPN.Value = $ReturnValue + $UPN.Value.Substring($UPN.Value.IndexOf('@'))
+        }
+        
+        if (Get-Confirmation "Would you like to set the Pre-Windows 2000 name to the same? (select 'no' to enter a new one")
+        {
+            $SamAccountName.Value = $ReturnValue
+        }
+        else
+        {
+            $ReturnValue = (Read-Host "`r`nPlease enter the Pre-Windows 2000 username (SAM).`r`nLeave blank to leave unchanged`r`n").trim()
+        }
+
+        if ($ReturnValue)
+        {
+            $SamAccountName.Value = $ReturnValue
+        }
+    }
+}
+
 # Returns true if the account does not already exist
 function Confirm-AccountDoesNotExist 
 {
@@ -818,6 +872,7 @@ function Confirm-AccountDoesNotExist
 
     if ($Test)
     {
+        Write-Warning "`r`nA User with the same name/username already exists!"
         return $false
     }
     else 
