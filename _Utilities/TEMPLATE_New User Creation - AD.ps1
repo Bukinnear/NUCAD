@@ -134,6 +134,9 @@ Populate the account details
 Write-Heading "Populating account details."
 
 Set-MirroredProperties -Identity $NewUser.SamAccountName -MirrorUser $MirrorUser
+# OPTIONAL - not necessary for all clients
+# Confirm-Manager -Identity $NewUser.SamAccountName
+
 Set-MirroredGroups -Identity $NewUser.SamAccountName -MirrorUser $MirrorUser
 
 # NOTE: O365 ONLY These 3 are NOT TO BE USED if the client has an on-prem exchange. Use Enable-UserMailbox instead

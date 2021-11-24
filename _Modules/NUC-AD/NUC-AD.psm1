@@ -10,7 +10,7 @@ Add-Type -TypeDefinition @"
    }
 "@
 
-<#
+    <#
 .SYNOPSIS
     Gets a true/false response from the user
 .DESCRIPTION
@@ -698,6 +698,47 @@ function Get-MirrorUser
     throw "No mirror user was found"
 }
 
+function Get-Manager
+{
+    for (;;)
+    {
+        $ManagerName = (Read-Host "`r`n----------`r`nPlease the manager's username").Trim()
+
+        if (!$ManagerName)
+        {
+            if (Get-Confirmation "Would you like to set the user's manager as 'None'?")
+            {
+                return $null
+            }
+            else 
+            {
+                continue
+            }
+        }
+        
+        try 
+        {
+            $manager = Get-ADUser -Identity $ManagerName -Properties *
+            if ($manager -and !$manager.count)
+            {
+                return $manager.DistinguishedName
+            }
+            else 
+            {
+                throw
+            }
+        }
+        catch 
+        {
+            Write-Space
+            if (Get-Confirmation "Could not locate user account - would you like to search for an account?")
+            {
+                Search-UserAccounts
+            }
+        }
+    }
+}
+
 # Gets the OU of the provided user
 function Get-OU 
 {
@@ -819,7 +860,7 @@ function Confirm-Username
 
         if (Get-Confirmation $ConfirmMessage)
         {
-            if ($true)#Confirm-AccountDoesNotExist -SamAccountName $SamAccountName.Value)
+            if (Confirm-AccountDoesNotExist -SamAccountName $SamAccountName.Value)
             {
                 return $true
             }
@@ -894,6 +935,86 @@ function Confirm-PrimarySMTPAddress
     )
 
     return Get-Confirmation "----------`r`nThe primary SMTP/email address as been set to:`r`n`r`n$($PrimarySMTP)`r`n`r`nIs this correct?"
+}
+
+function Confirm-Manager 
+{
+    param (
+        # User's account identity
+        [Parameter(Mandatory=$true)]
+        [string]
+        $Identity
+    )
+
+    if ($null -eq $Identity -or $Identity.Trim() -eq "")
+    {
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogString "The identity `"$($Identity)`" is invalid in the `'Confirm-Manager`' command."
+        return
+    }
+
+    $manager = $null
+    try 
+    {
+        $user = Get-ADUser -identity $Identity -Properties Manager
+        if ($user.Manager)
+        {
+            $manager = Get-ADUser $user.Manager
+        }
+    } 
+    catch 
+    {
+        Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogString "Could not get the new user's account to set the manager."
+    }
+
+    for (;;)
+    {
+        if (!($manager))
+        {
+            $ConfirmationMessage = "No manager has been set. Is this correct?"
+        }
+        else 
+        {
+            $ConfirmationMessage = "User's manager has been set to `"$($manager.Name)`". Is this correct?"
+        }
+        
+        if (Get-Confirmation $ConfirmationMessage)
+        {
+            return
+        }
+        else 
+        {
+            $new_manager = Get-Manager
+            if (!$new_manager)
+            {
+                Set-ADUser -Identity $user -clear manager
+                Write-Space
+                Write-Host "User's manager has been cleared."
+                return
+            }
+            else 
+            {
+                $new_manager = get-ADUser -Identity $new_manager -Properties *
+            }
+        }
+        
+        Write-Host "`r`nLocated new manager account:`r`n`r`nAccount`r`n$($new_manager.SAMAccountName)`r`n`r`nName`r`n$($new_manager.Name)`r`n`r`nEmail`r`n$($new_manager.EmailAddress)"
+
+        if (Get-Confirmation "Is this the correct account?")
+        {
+            try
+            {
+                Set-ADUser -Identity $user -Manager $new_manager.DistinguishedName
+                Write-Space
+                Write-Host "User's manager has been set!"
+                return
+            }
+            catch
+            {
+                Write-NewestErrorMessage -LogType WARNING CaughtError $_ -LogString "Something went wrong while setting the user's manager!"
+                
+            }
+        } 
+    }
 }
 
 # Prompts the user to confirm the new account details
