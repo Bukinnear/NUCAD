@@ -2,58 +2,24 @@
 Current 
 ---------
 
-CEDA:
-
-Address
-Set
-
-Work Hours ({CustomAttribute2})
-get
-set
-
-PO Number ({CustomAttribute1})
-set
+Set Address
+Set Office
+Set Role
+Add to specific groups
+Confirm Department
+Confirm OU?
 
 ---------
 High Priority
 ---------
 - Add functionality to add an address/pick from addresses
-- Write out address/manager info when copying from users
 
 ---------
 Medium Priority
 ---------
-- Documentation
-- Create O365 mailboxes (ATC)
-- Add functionality to add users to groups (MAWF)
-- Add check for email address taken (for on-prem?)
-- Liveconnect & creating home drives (permission failed - need to catch this)
-
-- Add contractors to script, eg.
-# Get the expiration Date
-    If(PromptForConfirmation "Is your user a Contractor? Will you need to set an expiration date?`r`nIf yes, please ensure the format is dd/MM/yyyy")
-        {
-            # Holding the expiration date as a variable
-            $ExpirationDate = Read-Host "Please enter an expiration date (dd/MM/yyyy)"
-        }
 
 ---------
 Lower Priority
 ---------
-- Double check error modes:
-    - Set-FolderPermissions 
-    - Import-ExchangeSnapin
-- Create verification for Sam account name/UPN
-    - Prompt to provide a different SAM/UPN if the name is taken
 - Provide parameter validation for functions (Eg. ValidateNotNullOrEmpty)
-- Office 365 New User Module (MAWF)
-
----------
-Finished
----------
-- Check error on copying a user with no groups
-- Debug display names in Exchange (Eg. O'Connor becomes OConnor)
-- Change all instances of type [Microsoft.ActiveDirectory.Management.ADUser] to [string] (and update client scripts)
-- Update Bucher docs
-- Update Parc docs
-- Updated ANZPAA docs
+- Set user expiration date?
