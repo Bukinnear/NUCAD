@@ -1840,7 +1840,7 @@ function Set-MailboxDefaultRetentionPolicy
     
     try 
     {
-        $Mailbox = Set-Mailbox -Identity $Identity -RetentionPolicy $PolicyName -ErrorAction Stop
+        $null = Set-Mailbox -Identity $Identity -RetentionPolicy $PolicyName -ErrorAction Stop
     }
     catch 
     {
@@ -2137,7 +2137,7 @@ function Enable-MailboxArchive
 
     try 
     {
-        $Archive = Enable-mailbox $Identity -archive -ArchiveDatabase $Database -ErrorAction Stop
+        $null = Enable-mailbox $Identity -archive -ArchiveDatabase $Database -ErrorAction Stop
     }
     catch 
     {
