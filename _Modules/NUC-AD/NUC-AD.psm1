@@ -541,20 +541,25 @@ Function Get-JobTitle
 function Get-PhoneNumber
 {
     Write-Space
-    do 
+    $PhoneNumber = Read-Host "----------`r`nPlease enter a phone number (Leave blank for none)"        
+    
+    if ($PhoneNumber)
     {
-        $PhoneNumber = Read-Host "----------`r`nPlease enter a phone number (Leave blank for none)"        
-    } while (($PhoneNumber -ne "") -and ($Null -ne $PhoneNumber))
+        $PhoneNumber = $PhoneNumber.Trim()
+    }
+
     return $PhoneNumber
 }
 
 function Get-MobileNumber
 {
     Write-Space
-    do 
+    $MobileNumber = Read-Host "----------`r`nPlease enter a mobile number (Leave blank for none)"
+    if ($MobileNumber)
     {
-        $MobileNumber = Read-Host "----------`r`nPlease enter a mobile number (Leave blank for none)"        
-    } while (($MobileNumber -ne "") -and ($Null -ne $MobileNumber))
+        $MobileNumber = $MobileNumber.Trim()
+    }
+
     return $MobileNumber
 }
 
@@ -1411,28 +1416,26 @@ function Set-MobileNumber
 {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param (
-        [Paramter(
-            Mandatory=$true
-        )]
+        [Parameter(Mandatory=$true)]
         [string]
         $Identity,
 
-        [Paramater(
-            Mandatory=$true
-        )]
+        [Parameter()]
         [string]
         $MobileNumber
     )
 
+    if (!$MobileNumber) { return }
+
     try 
     {
         Set-ADUser -Identity $Identity -MobilePhone $MobileNumber
+        Write-Host "- Set Mobile Number field"
     }
     catch 
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not set user's mobile number."
     }
-
 }
 
 function Set-Company
@@ -1455,6 +1458,7 @@ function Set-Company
     try
     {
         Set-ADUser -Identity $Identity -Company $Company
+        Write-Host "- Set Company field"
     }
     catch
     {
