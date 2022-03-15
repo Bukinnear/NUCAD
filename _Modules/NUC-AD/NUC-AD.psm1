@@ -1,4 +1,8 @@
 $LogPath = 'C:\temp\UserCreationLogs\UserCreationADLog.txt'
+if (!(Get-ChildItem $LogPath -ErrorAction SilentlyContinue)) 
+{
+    New-Item $LogPath -ItemType File
+}
 # Import-Module -Name "C:\Code\Powershell\_Modules\NUC-AD" -Force
 
 Add-Type -TypeDefinition @"
@@ -137,7 +141,7 @@ function Write-NewestErrorMessage
     Write-Host "`r`nFull Details:"
     Write-Host -ForegroundColor $LogColour "$($LogType.ToString())`r`nCategory: $($CaughtError.CategoryInfo.Category)`r`nMessage: $($CaughtError.Exception.Message)`r`n"
 
-    if ($LogToFile)
+    if ($LogToFile -and (Get-ChildItem $LogPath -ErrorAction SilentlyContinue))
     {
         $LogFileText = "$(Get-Date -Format "yyyy/MM/dd | HH:mm:ss") | $($LogType.ToString()) | $($LogString) | Category: $($CaughtError.CategoryInfo.Category) | Message: $($CaughtError.Exception.Message)"
         Out-File -FilePath $LogPath -Append -InputObject $LogFileText
@@ -975,14 +979,14 @@ function Confirm-Manager
     {
         if (!($manager))
         {
-            $ConfirmationMessage = "No manager has been set. Is this correct?"
+            $ConfirmationMessage = "No manager has been set. Would you like to set one?"
         }
         else 
         {
             $ConfirmationMessage = "User's manager has been set to `"$($manager.Name)`". Is this correct?"
         }
         
-        if (Get-Confirmation $ConfirmationMessage)
+        if (!Get-Confirmation $ConfirmationMessage)
         {
             return
         }
@@ -1589,17 +1593,50 @@ function Set-MirroredGroups
             Mandatory=$true
         )]
         [Microsoft.ActiveDirectory.Management.ADUser]
-        $MirrorUser
+        $MirrorUser,
+
+        # Array of groups to exclude in the mirror
+        [Parameter(
+            Mandatory=$false
+        )]
+        [string[]]
+        $ExcludedGroups = @(),
+
+        # Array of additional group to add users to. Must be in the form of an object GUID.
+        [Parameter(
+            Mandatory=$false
+        )]
+        [string[]]
+        $AdditionalGroups = @()
     )
 
     try 
     {
-        $Groups = Get-ADPrincipalGroupMembership $MirrorUser | Where {$_.name -ne 'Domain Users'}
+        $Groups = Get-ADPrincipalGroupMembership $MirrorUser | Where {$_.name -ne 'Domain Users' -and $_.objectGuid -notin $ExcludedGroups}
     }
     catch 
     {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not get $($MirrorUser.DisplayName)'s groups - please add memberships manually"
         return
+    }
+
+    if ($AdditionalGroups)
+    {
+        $add_groups = foreach ($groupID in $AdditionalGroups) { 
+            try 
+            {
+                get-ADGroup $groupID
+            }
+            catch 
+            {
+                Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Could not locate additional group with object Guid `'$($groupID)`'"
+            }
+        }
+
+        if ($add_groups) 
+        {
+            $Groups += $add_groups
+        }
     }
 
     if (!$Groups)
@@ -1609,7 +1646,7 @@ function Set-MirroredGroups
         return
     }
 
-    Write-Host "`r`n----------`r`n$($MirrorUser.DisplayName) is part of the following groups:`r`n----------`r`n"
+    Write-Host "`r`n----------`r`nThe following group memberships will be applied:`r`n----------`r`n"
     foreach ($Group in $Groups)
     {
         Write-Host "- $($Group.Name)"
@@ -1620,7 +1657,7 @@ function Set-MirroredGroups
     try
     {
         Add-AdPrincipalGroupMembership -Identity $Identity -MemberOf $Groups
-        Write-Output "- User has been added to all mirrored user's groups"
+        Write-Output "- Finished adding user's groups"
     }
     catch
     {

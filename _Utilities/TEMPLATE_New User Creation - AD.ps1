@@ -67,7 +67,10 @@ $Script:SecondaryDomains = @("Domain.org", "Domain.com") # Fill this with comma-
 
 $Script:Webpage = "https://www.domain.com.au/" # The user account's home/web page address
 
-$Script:AdditionalGroups = @("Group-1", "Group_2") # a comma-separated list of groups to ensure the user is part of. Use the groups' SamAccountNames to avoid issues
+# Comma-separated lists of groups to ensure the user is/is not part of. 
+# Must be in the form of AD Object Guids, or empty arrays if no changes are required.
+$Script:AdditionalGroups = @("GroupGuid1", "Group2Guid") 
+$Script:ExcludedGroups = @("Group1Guid, Group2Guid") 
 
 $Script:Addresses = Get-Addresses -MailName $Mail -PrimaryDomain $PrimaryDomain -SecondaryDomains $SecondaryDomains
 $Script:JobTitle = Get-JobTitle
@@ -137,7 +140,7 @@ Set-MirroredProperties -Identity $NewUser.SamAccountName -MirrorUser $MirrorUser
 # OPTIONAL - not necessary for all clients
 # Confirm-Manager -Identity $NewUser.SamAccountName
 
-Set-MirroredGroups -Identity $NewUser.SamAccountName -MirrorUser $MirrorUser
+Set-MirroredGroups -Identity $NewUser.SamAccountName -MirrorUser $MirrorUser -AdditionalGroups $AdditionalGroups -ExcludedGroups $ExcludedGroups
 
 # NOTE: O365 ONLY These 3 are NOT TO BE USED if the client has an on-prem exchange. Use Enable-UserMailbox instead
 Set-ProxyAddresses -Identity $NewUser.SamAccountName -ProxyAddresses $Addresses.ProxyAddresses
