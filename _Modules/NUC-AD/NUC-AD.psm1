@@ -1,7 +1,7 @@
-$LogPath = 'C:\temp\UserCreationLogs\UserCreationADLog.txt'
+$LogPath = 'C:\temp\UserCreationADLog.txt'
 if (!(Get-ChildItem $LogPath -ErrorAction SilentlyContinue)) 
 {
-    New-Item $LogPath -ItemType File
+    $NULL = New-Item $LogPath -ItemType File
 }
 # Import-Module -Name "C:\Code\Powershell\_Modules\NUC-AD" -Force
 
@@ -14,7 +14,7 @@ Add-Type -TypeDefinition @"
    }
 "@
 
-    <#
+<#
 .SYNOPSIS
     Gets a true/false response from the user
 .DESCRIPTION
@@ -1242,7 +1242,7 @@ function New-UserAccount
         }
     }
     catch
-    {    
+    {
         Write-NewestErrorMessage -LogType ERROR -CaughtError $_ -LogToFile $true -LogString "Failed to create new user. Exiting"
         return $null
     }
