@@ -986,7 +986,7 @@ function Confirm-Manager
             $ConfirmationMessage = "User's manager has been set to `"$($manager.Name)`". Is this correct?"
         }
         
-        if (!Get-Confirmation $ConfirmationMessage)
+        if (!(Get-Confirmation $ConfirmationMessage))
         {
             return
         }
